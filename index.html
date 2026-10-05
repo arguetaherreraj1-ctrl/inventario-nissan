@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Nissan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen relative">
+
+    <!-- ==============================================
+         MODAL DEL ESTANTE VISUAL
+         ============================================== -->
+    <div id="modal-estante" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-[100] p-4 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="font-black text-red-600 text-lg">Mapa del Estante</h3>
+                <button onclick="cerrarEstante()" class="text-gray-400 hover:text-gray-800 font-bold text-2xl">&times;</button>
+            </div>
+            
+            <div class="text-center mb-4">
+                <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Ubicación exacta:</p>
+                <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-black text-xl" id="estante-ubicacion-texto"></span>
+            </div>
+
+            <!-- Estructura del estante físico (5 niveles) -->
+            <div class="border-8 border-gray-800 bg-gray-200 rounded-sm p-3 flex flex-col gap-3 relative shadow-inner">
+                <div class="border-b-8 border-gray-800 h-10 flex justify-center items-center text-gray-500 font-bold text-xs bg-white shadow-sm" id="nivel-A">NIVEL A</div>
+                <div class="border-b-8 border-gray-800 h-10 flex justify-center items-center text-gray-500 font-bold text-xs bg-white shadow-sm" id="nivel-B">NIVEL B</div>
+                <div class="border-b-8 border-gray-800 h-10 flex justify-center items-center text-gray-500 font-bold text-xs bg-white shadow-sm" id="nivel-C">NIVEL C</div>
+                <div class="border-b-8 border-gray-800 h-10 flex justify-center items-center text-gray-500 font-bold text-xs bg-white shadow-sm" id="nivel-D">NIVEL D</div>
+                <div class="h-10 flex justify-center items-center text-gray-500 font-bold text-xs bg-white shadow-sm" id="nivel-E">NIVEL E</div>
+                
+                <!-- Indicador visual flotante -->
+                <div id="indicador-pieza" class="absolute bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg animate-bounce hidden z-10 border-2 border-white">📍 ¡AQUÍ!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA 1: LOGIN (Igual que antes) -->
+    <div id="pantalla-login" class="max-w-md mx-auto mt-10 bg-white rounded-xl shadow-md p-6">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-red-600 uppercase">Nissan Servicio</h1>
+            <p class="text-gray-500 text-sm">Control de Herramientas Especiales</p>
+        </div>
+        <div id="form-login">
+            <label class="block text-sm font-bold mb-1 text-gray-600 text-center">Ingresa tu NIP</label>
+            <input type="password" id="login-nip" placeholder="****" class="w-full p-3 border rounded-lg mb-4 text-center text-3xl tracking-widest bg-gray-50">
+            <button onclick="iniciarSesion()" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">Entrar</button>
+            <p class="text-center text-sm text-gray-500 mt-4">¿No tienes NIP? <a href="#" onclick="toggleAuth()" class="text-blue-600 font-bold">Regístrate aquí</a></p>
+        </div>
+        <div id="form-registro" class="hidden">
+            <label class="block text-sm font-bold mb-1 text-gray-600">Nombre Completo</label>
+            <input type="text" id="reg-nombre" placeholder="Ej. Jorge Argueta" class="w-full p-3 border rounded-lg mb-3 bg-gray-50">
+            <label class="block text-sm font-bold mb-1 text-gray-600">Crea un NIP</label>
+            <input type="password" id="reg-nip" placeholder="Ej. 1234" class="w-full p-3 border rounded-lg mb-4 text-center text-2xl tracking-widest bg-gray-50">
+            <button onclick="registrarTecnico()" class="w-full bg-gray-800 text-white font-bold py-3 rounded-lg">Registrar y Entrar</button>
+            <p class="text-center text-sm text-gray-500 mt-4">¿Ya tienes NIP? <a href="#" onclick="toggleAuth()" class="text-blue-600 font-bold">Inicia sesión</a></p>
+        </div>
+    </div>
+
+    <!-- PANTALLA 2: APLICACIÓN PRINCIPAL -->
+    <div id="pantalla-app" class="max-w-md mx-auto md:max-w-2xl hidden pb-10">
+        
+        <div class="bg-white rounded-b-xl shadow-md p-4 mb-4 flex justify-between items-center sticky top-0 z-50 border-b-4 border-red-600">
+            <div>
+                <div class="font-black text-red-600 text-lg leading-tight">NISSAN</div>
+                <div id="nombre-usuario" class="text-xs font-bold text-gray-500">Técnico: ---</div>
+            </div>
+            <button onclick="cerrarSesion()" class="text-sm bg-gray-200 text-gray-700 px-3 py-1 rounded shadow-sm font-bold">Salir</button>
+        </div>
+
+        <div class="flex mb-4 px-2 space-x-2">
+            <button onclick="verCatalogo()" id="btn-tab-catalogo" class="flex-1 bg-red-600 text-white font-bold py-2 rounded-lg shadow">Catálogo</button>
+            <button onclick="verHistorial()" id="btn-tab-historial" class="flex-1 bg-white text-gray-600 font-bold py-2 rounded-lg shadow">Historial</button>
+        </div>
+
+        <!-- VISTA CATÁLOGO -->
+        <div id="vista-catalogo">
+            <div class="bg-white rounded-xl shadow-md p-4 mb-4 flex gap-2 mx-2">
+                <input type="text" id="buscador" onkeyup="filtrarHerramientas()" placeholder="🔎 Buscar código o nombre..." class="w-full p-2 border rounded-lg bg-gray-50">
+                <button onclick="toggleFormularioPieza()" class="bg-gray-800 text-white px-4 rounded-lg font-bold text-xl">+</button>
+            </div>
+
+            <div id="form-pieza" class="bg-white rounded-xl shadow-md p-5 mb-4 hidden mx-2 border-l-4 border-red-600">
+                <h3 class="font-bold text-gray-800 mb-3 border-b pb-2">Registrar Pieza</h3>
+                <input type="text" id="nueva-clave" placeholder="Clave (Ej. NI-123)" class="w-full p-2 border rounded-lg mb-2 bg-gray-50">
+                <input type="text" id="nueva-desc" placeholder="Descripción" class="w-full p-2 border rounded-lg mb-2 bg-gray-50">
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="nueva-ubicacion" placeholder="Estante (Ej. A1)" class="w-1/2 p-2 border rounded-lg bg-gray-50">
+                    <input type="number" id="nueva-cant" placeholder="Cantidad" value="1" class="w-1/2 p-2 border rounded-lg bg-gray-50">
+                </div>
+                <label class="block text-xs font-bold mb-1 text-gray-500">Fotografía:</label>
+                <input type="file" id="nueva-foto" accept="image/*" capture="environment" class="w-full p-2 border rounded-lg mb-4 bg-gray-50 text-sm">
+                <button onclick="guardarPieza()" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg">Guardar en Inventario</button>
+            </div>
+
+            <div id="lista-herramientas" class="space-y-3 mx-2"></div>
+        </div>
+
+        <!-- VISTA HISTORIAL -->
+        <div id="vista-historial" class="hidden mx-2">
+            <div class="bg-white rounded-xl shadow-md p-5">
+                <h2 class="font-bold text-gray-800 mb-4 border-b pb-2 uppercase text-sm">Bitácora de Entradas y Salidas</h2>
+                <div id="lista-historial" class="space-y-3"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let usuarioActual = "";
+        let todasLasHerramientas = [];
+
+        // Lógica de Autenticación
+        function toggleAuth() {
+            document.getElementById('form-login').classList.toggle('hidden');
+            document.getElementById('form-registro').classList.toggle('hidden');
+        }
+
+        async function iniciarSesion() {
+            const nip = document.getElementById('login-nip').value;
+            const res = await fetch('/login_tecnico', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nip }) });
+            const data = await res.json();
+            if(data.error) alert("❌ " + data.error); else entrarApp(data.nombre);
+        }
+
+        async function registrarTecnico() {
+            const nombre = document.getElementById('reg-nombre').value;
+            const nip = document.getElementById('reg-nip').value;
+            const res = await fetch('/registrar_tecnico', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre, nip }) });
+            const data = await res.json();
+            if(data.error) alert("❌ " + data.error); else entrarApp(data.nombre);
+        }
+
+        function entrarApp(nombre) {
+            usuarioActual = nombre;
+            document.getElementById('pantalla-login').classList.add('hidden');
+            document.getElementById('pantalla-app').classList.remove('hidden');
+            document.getElementById('nombre-usuario').innerText = "Técnico: " + nombre;
+            document.getElementById('login-nip').value = ""; document.getElementById('reg-nip').value = "";
+            cargarHerramientas();
+        }
+
+        function cerrarSesion() {
+            usuarioActual = "";
+            document.getElementById('pantalla-app').classList.add('hidden');
+            document.getElementById('pantalla-login').classList.remove('hidden');
+        }
+
+        // Navegación
+        function verCatalogo() {
+            document.getElementById('vista-catalogo').classList.remove('hidden'); document.getElementById('vista-historial').classList.add('hidden');
+            document.getElementById('btn-tab-catalogo').className = "flex-1 bg-red-600 text-white font-bold py-2 rounded-lg shadow";
+            document.getElementById('btn-tab-historial').className = "flex-1 bg-white text-gray-600 font-bold py-2 rounded-lg shadow";
+            cargarHerramientas();
+        }
+
+        function verHistorial() {
+            document.getElementById('vista-catalogo').classList.add('hidden'); document.getElementById('vista-historial').classList.remove('hidden');
+            document.getElementById('btn-tab-historial').className = "flex-1 bg-red-600 text-white font-bold py-2 rounded-lg shadow";
+            document.getElementById('btn-tab-catalogo').className = "flex-1 bg-white text-gray-600 font-bold py-2 rounded-lg shadow";
+            cargarHistorial();
+        }
+
+        // --- SISTEMA DEL ESTANTE VISUAL ---
+        function abrirEstante(ubicacion) {
+            document.getElementById('modal-estante').classList.remove('hidden');
+            document.getElementById('estante-ubicacion-texto').innerText = ubicacion;
+            
+            // Ocultar el indicador primero
+            const indicador = document.getElementById('indicador-pieza');
+            indicador.classList.add('hidden');
+
+            // Leer la primera letra de la ubicación (Ej: "A" de A1)
+            const letra = ubicacion.charAt(0).toUpperCase();
+            const nivel = document.getElementById('nivel-' + letra);
+
+            // Si el nivel existe en nuestro dibujo, movemos el indicador ahí
+            if(nivel) {
+                // Pequeño retardo para que la animación se vea natural
+                setTimeout(() => {
+                    nivel.appendChild(indicador);
+                    indicador.classList.remove('hidden');
+                }, 150);
+            }
+        }
+
+        function cerrarEstante() {
+            document.getElementById('modal-estante').classList.add('hidden');
+        }
+
+        // --- CARGA DE PIEZAS ---
+        async function cargarHerramientas() {
+            const respuesta = await fetch('/herramientas');
+            todasLasHerramientas = await respuesta.json();
+            dibujarHerramientas(todasLasHerramientas);
+        }
+
+        function dibujarHerramientas(herramientas) {
+            const contenedor = document.getElementById('lista-herramientas');
+            contenedor.innerHTML = ''; 
+            
+            herramientas.forEach(h => {
+                const imgTag = h.foto_url ? `<img src="${h.foto_url}" class="w-20 h-20 object-cover rounded-lg border shadow-sm">` : `<div class="w-20 h-20 bg-gray-100 border border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 text-xs"><span class="text-xl">📷</span></div>`;
+
+                // Botón dinámico: Si hay disponibles, muestra Tomar. Si no, muestra Devolver.
+                const btn = h.cantidad_disponible > 0 
+                    ? `<button onclick="prestar('${h.clave}')" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow text-sm">Tomar</button>` 
+                    : `<button onclick="devolver('${h.clave}')" class="bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow text-sm border-2 border-gray-900">Devolver</button>`;
+
+                const estado = h.cantidad_disponible > 0 ? `<span class="text-green-600 font-black text-sm">● Disponible</span>` : `<span class="text-red-500 font-black text-sm">● Fuera de estante</span>`;
+
+                contenedor.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4">
+                        ${imgTag}
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <h2 class="font-black text-gray-800 text-lg leading-tight">${h.clave}</h2>
+                                    <!-- Botón de Ubicación con Icono -->
+                                    <button onclick="abrirEstante('${h.ubicacion}')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold px-3 py-1 rounded shadow-sm flex items-center gap-1 transition">
+                                        📍 ${h.ubicacion}
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1 uppercase">${h.descripcion}</p>
+                            </div>
+                            <div class="flex justify-between items-center mt-3">
+                                ${estado}
+                                ${btn}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function filtrarHerramientas() {
+            const texto = document.getElementById('buscador').value.toLowerCase();
+            dibujarHerramientas(todasLasHerramientas.filter(h => h.clave.toLowerCase().includes(texto) || h.descripcion.toLowerCase().includes(texto)));
+        }
+
+        // --- PRÉSTAMO Y DEVOLUCIÓN ---
+        async function prestar(clave) {
+            const res = await fetch('/prestar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ herramienta_clave: clave, tecnico_nombre: usuarioActual }) });
+            const data = await res.json();
+            if(!data.error) { alert(`✅ ASIGNADA: Dirígete a la ubicación ${data.ubicacion}`); cargarHerramientas(); } else { alert("❌ " + data.error); }
+        }
+
+        async function devolver(clave) {
+            // Confirmación antes de devolver
+            if(!confirm(`¿Confirmas que estás regresando la pieza ${clave} al estante?`)) return;
+
+            const res = await fetch('/devolver', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ herramienta_clave: clave }) });
+            const data = await res.json();
+            if(!data.error) { alert("🔄 " + data.mensaje); cargarHerramientas(); } else { alert("❌ " + data.error); }
+        }
+
+        // --- HISTORIAL (AHORA CON DEVOLUCIONES) ---
+        async function cargarHistorial() {
+            const res = await fetch('/historial');
+            const data = await res.json();
+            const cont = document.getElementById('lista-historial');
+            cont.innerHTML = '';
+
+            data.forEach(p => {
+                const fSalida = new Date(p.fecha_salida).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                
+                // Generamos la etiqueta de estado
+                let badge = `<div class="bg-red-50 text-red-600 text-xs px-2 py-1 rounded font-bold border border-red-200">Tomado: ${fSalida}</div>`;
+                
+                // Si la pieza ya tiene fecha de devolución, cambiamos la etiqueta a verde
+                if(p.fecha_devolucion) {
+                    const fDevolucion = new Date(p.fecha_devolucion).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    badge = `<div class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded font-bold border border-green-200">Devuelto: ${fDevolucion}</div>`;
+                }
+
+                cont.innerHTML += `
+                    <div class="border border-gray-100 bg-gray-50 p-3 rounded-lg flex justify-between items-center text-sm shadow-sm">
+                        <div>
+                            <span class="font-black text-gray-800 block">${p.tecnico_nombre}</span>
+                            <span class="text-gray-500 text-xs uppercase block mt-1">Pieza: <span class="font-bold text-gray-800">${p.herramienta_clave}</span></span>
+                        </div>
+                        <div class="text-right flex flex-col gap-1 items-end">
+                            ${badge}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function toggleFormularioPieza() { document.getElementById('form-pieza').classList.toggle('hidden'); }
+        async function guardarPieza() { /* ... Lógica anterior de FormData ... */ }
+    </script>
+</body>
+</html>
