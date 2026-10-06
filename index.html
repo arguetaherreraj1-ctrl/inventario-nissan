@@ -240,36 +240,36 @@
             document.getElementById('modal-agregar').classList.add('hidden'); 
             document.getElementById('form-agregar').reset(); 
         }
-
-        async function guardarHerramienta(evento) {
+async function guardarHerramienta(evento) {
             evento.preventDefault();
             
-            // Usamos FormData para poder enviar la imagen junto con los textos
-            const formData = new FormData();
-            formData.append('clave', document.getElementById('nueva-clave').value.toUpperCase());
-            formData.append('descripcion', document.getElementById('nueva-desc').value.toUpperCase());
-            formData.append('cantidad', document.getElementById('nueva-cant').value);
-            formData.append('posicion', document.getElementById('nueva-pos').value.toUpperCase());
-            
-            // Adjuntamos la imagen solo si el usuario seleccionó una
-            const inputImg = document.getElementById('nueva-img');
-            if (inputImg.files.length > 0) {
-                formData.append('imagen', inputImg.files[0]);
-            }
+            // Volvemos al formato JSON que tu backend de Python sí entiende
+            const nuevaHerramienta = {
+                clave: document.getElementById('nueva-clave').value.toUpperCase(),
+                descripcion: document.getElementById('nueva-desc').value.toUpperCase(),
+                cantidad: parseInt(document.getElementById('nueva-cant').value),
+                posicion: document.getElementById('nueva-pos').value.toUpperCase()
+            };
 
             try {
-                await fetch('/api/herramientas', {
+                const respuesta = await fetch('/api/herramientas', {
                     method: 'POST',
-                    body: formData // Nota: al usar FormData no se pone headers Content-Type
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevaHerramienta)
                 });
                 
-                cerrarModalAgregar();
-                cargarCatalogo(); 
+                if (respuesta.ok) {
+                    cerrarModalAgregar();
+                    cargarCatalogo(); // Recarga la tabla para mostrar el nuevo registro
+                } else {
+                    alert("Hubo un problema al guardar en la base de datos.");
+                }
+                
             } catch (error) {
-                alert("Error al guardar la herramienta.");
+                alert("Error al intentar guardar la herramienta.");
+                console.error(error);
             }
         }
-
         function descargarExcel() {
             alert("Esta función descargará el reporte en la siguiente fase de desarrollo.");
         }
