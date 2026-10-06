@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Nissan</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
 
-    <!-- Encabezado Principal -->
     <header class="bg-white shadow-md mb-6">
         <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center border-b-4 border-red-600">
             <div>
@@ -25,40 +22,36 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4">
-        <!-- Pestañas de Navegación -->
+        <!-- Pestañas -->
         <div class="flex gap-2 mb-4">
-            <button class="flex-1 bg-red-600 text-white font-bold py-3 rounded shadow-md" id="btn-catalogo">
+            <button onclick="cambiarPestana('catalogo')" id="btn-catalogo" class="flex-1 bg-red-600 text-white font-bold py-3 rounded shadow-md transition">
                 Catálogo
             </button>
-            <button class="flex-1 bg-white text-gray-700 font-bold py-3 rounded shadow-md border hover:bg-gray-50" id="btn-historial">
+            <button onclick="cambiarPestana('historial')" id="btn-historial" class="flex-1 bg-white text-gray-700 font-bold py-3 rounded shadow-md border hover:bg-gray-50 transition">
                 Historial
             </button>
         </div>
 
-        <!-- Barra de Búsqueda y Botones de Acción -->
-        <div class="flex gap-2 mb-6 bg-white p-2 rounded shadow-md">
+        <!-- Buscador y Botón Agregar (Solo visible en Catálogo) -->
+        <div id="barra-controles" class="flex gap-2 mb-6 bg-white p-2 rounded shadow-md">
             <div class="relative flex-1 flex">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                     <i class="fa-solid fa-magnifying-glass text-blue-500"></i>
                 </span>
-                <!-- Input de búsqueda -->
                 <input type="text" id="buscador" onkeyup="filtrarHerramientas()" placeholder="Buscar código o nombre..." 
                     class="w-full pl-10 pr-4 py-3 border rounded-l focus:outline-none focus:ring-2 focus:ring-red-500 text-lg">
                 
-                <!-- BOTÓN DE MICRÓFONO (Búsqueda por Voz) -->
                 <button id="btn-microfono" class="bg-gray-100 hover:bg-gray-200 border-y border-r border-gray-300 px-4 text-xl transition" title="Búsqueda por voz">
                     🎤
                 </button>
             </div>
-            
-            <!-- Botón para Agregar Herramienta -->
             <button onclick="abrirModalAgregar()" class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded font-bold text-xl shadow-md transition">
                 +
             </button>
         </div>
 
-        <!-- Contenedor del Catálogo (Tabla) -->
-        <div class="bg-white rounded shadow-md overflow-hidden" id="contenedor-catalogo">
+        <!-- CONTENEDOR: CATÁLOGO -->
+        <div id="contenedor-catalogo" class="bg-white rounded shadow-md overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 border-b">
                     <tr>
@@ -69,38 +62,68 @@
                         <th class="p-3 font-semibold text-gray-600 text-center">Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-herramientas" class="divide-y">
-                    <!-- Los datos de PostgreSQL se inyectarán aquí desde JavaScript -->
+                <tbody id="tabla-herramientas" class="divide-y"></tbody>
+            </table>
+            <div id="mensaje-vacio" class="text-center p-8 text-gray-500 hidden">
+                No hay herramientas registradas aún. Haz clic en "+" para empezar.
+            </div>
+        </div>
+
+        <!-- CONTENEDOR: HISTORIAL (Oculto por defecto) -->
+        <div id="contenedor-historial" class="bg-white rounded shadow-md overflow-hidden hidden p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Historial de Movimientos</h2>
+                <!-- Botón de Excel preparado para el futuro -->
+                <button onclick="descargarExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold shadow flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> Descargar Excel
+                </button>
+            </div>
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="p-3 font-semibold text-gray-600">Fecha</th>
+                        <th class="p-3 font-semibold text-gray-600">Herramienta</th>
+                        <th class="p-3 font-semibold text-gray-600">Acción</th>
+                        <th class="p-3 font-semibold text-gray-600">Técnico</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-historial" class="divide-y">
+                    <!-- Aquí se llenará el historial -->
+                    <tr><td colspan="4" class="p-4 text-center text-gray-500">Aún no hay movimientos registrados.</td></tr>
                 </tbody>
             </table>
-            <!-- Mensaje si está vacío -->
-            <div id="mensaje-vacio" class="text-center p-8 text-gray-500 hidden">
-                No hay herramientas registradas aún. Haz clic en el botón "+" para empezar.
-            </div>
         </div>
     </main>
 
-    <!-- Modal para Agregar Herramienta -->
+    <!-- Modal Agregar -->
     <div id="modal-agregar" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center px-4">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 class="text-xl font-bold mb-4 text-gray-800">Agregar Nueva Herramienta</h2>
             <form id="form-agregar" onsubmit="guardarHerramienta(event)">
                 <div class="mb-3">
                     <label class="block text-gray-700 text-sm font-bold mb-1">Clave (Ej. NI-50190-C)</label>
-                    <input type="text" id="nueva-clave" required class="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-500 uppercase">
+                    <input type="text" id="nueva-clave" required class="w-full border rounded p-2 uppercase">
                 </div>
                 <div class="mb-3">
                     <label class="block text-gray-700 text-sm font-bold mb-1">Descripción</label>
-                    <input type="text" id="nueva-desc" required class="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-500 uppercase">
+                    <input type="text" id="nueva-desc" required class="w-full border rounded p-2 uppercase">
                 </div>
+                
+                <!-- CAMPO DE IMAGEN OPCIONAL RECUPERADO -->
+                <div class="mb-3">
+                    <label class="block text-gray-700 text-sm font-bold mb-1">Fotografía (Opcional)</label>
+                    <!-- Nota que no tiene el atributo 'required' -->
+                    <input type="file" id="nueva-img" accept="image/*" class="w-full border rounded p-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
+                </div>
+
                 <div class="flex gap-4 mb-4">
                     <div class="flex-1">
                         <label class="block text-gray-700 text-sm font-bold mb-1">Cantidad</label>
-                        <input type="number" id="nueva-cant" required min="1" value="1" class="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <input type="number" id="nueva-cant" required min="1" value="1" class="w-full border rounded p-2">
                     </div>
                     <div class="flex-1">
                         <label class="block text-gray-700 text-sm font-bold mb-1">Posición (Ej. A1)</label>
-                        <input type="text" id="nueva-pos" required class="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-500 uppercase">
+                        <input type="text" id="nueva-pos" required class="w-full border rounded p-2 uppercase">
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 mt-6">
@@ -111,64 +134,71 @@
         </div>
     </div>
 
-    <!-- Scripts de Lógica y Búsqueda por Voz -->
     <script>
-        // ==========================================
-        // 1. LÓGICA DE BÚSQUEDA POR VOZ (Web Speech API)
-        // ==========================================
+        // --- NAVEGACIÓN DE PESTAÑAS ---
+        function cambiarPestana(pestana) {
+            const btnCat = document.getElementById('btn-catalogo');
+            const btnHist = document.getElementById('btn-historial');
+            const contCat = document.getElementById('contenedor-catalogo');
+            const contHist = document.getElementById('contenedor-historial');
+            const barraCtrl = document.getElementById('barra-controles');
+
+            if (pestana === 'catalogo') {
+                btnCat.className = "flex-1 bg-red-600 text-white font-bold py-3 rounded shadow-md transition";
+                btnHist.className = "flex-1 bg-white text-gray-700 font-bold py-3 rounded shadow-md border hover:bg-gray-50 transition";
+                contCat.classList.remove('hidden');
+                barraCtrl.classList.remove('hidden');
+                contHist.classList.add('hidden');
+            } else {
+                btnHist.className = "flex-1 bg-red-600 text-white font-bold py-3 rounded shadow-md transition";
+                btnCat.className = "flex-1 bg-white text-gray-700 font-bold py-3 rounded shadow-md border hover:bg-gray-50 transition";
+                contHist.classList.remove('hidden');
+                contCat.classList.add('hidden');
+                barraCtrl.classList.add('hidden');
+            }
+        }
+
+        // --- BÚSQUEDA POR VOZ ---
         const btnMicrofono = document.getElementById('btn-microfono');
         const buscador = document.getElementById('buscador');
-
-        // Detectar si el navegador soporta dictado
         const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (ReconocimientoVoz) {
             const reconocimiento = new ReconocimientoVoz();
-            reconocimiento.lang = 'es-MX'; // Español de México
+            reconocimiento.lang = 'es-MX'; 
             reconocimiento.continuous = false; 
 
             btnMicrofono.addEventListener('click', () => {
                 reconocimiento.start();
-                btnMicrofono.innerHTML = '🔴'; // Indicador visual de que está escuchando
+                btnMicrofono.innerHTML = '🔴'; 
                 btnMicrofono.classList.add('bg-red-100', 'text-red-600');
             });
 
             reconocimiento.onresult = (evento) => {
-                const textoEscuchado = evento.results[0][0].transcript;
-                buscador.value = textoEscuchado; 
+                buscador.value = evento.results[0][0].transcript; 
                 btnMicrofono.innerHTML = '🎤';
                 btnMicrofono.classList.remove('bg-red-100', 'text-red-600');
-                
-                // Dispara la función de filtrado automáticamente
                 filtrarHerramientas(); 
             };
 
-            reconocimiento.onerror = (evento) => {
-                console.error("Error al escuchar: ", evento.error);
+            reconocimiento.onerror = () => {
                 btnMicrofono.innerHTML = '🎤';
                 btnMicrofono.classList.remove('bg-red-100', 'text-red-600');
-                alert("No se pudo escuchar correctamente. Por favor, intenta de nuevo.");
             };
         } else {
-            // Ocultar el botón si el celular/navegador no soporta micrófono
             btnMicrofono.style.display = 'none'; 
         }
 
-        // ==========================================
-        // 2. LÓGICA DEL FRONTEND Y CONEXIÓN A POSTGRESQL
-        // ==========================================
-        
-        // Simulación de carga inicial (Aquí va tu fetch al backend de FastAPI/Flask)
+        // --- FUNCIONES DE HERRAMIENTAS ---
         async function cargarCatalogo() {
             try {
-                // Cambia '/api/herramientas' por la ruta real que configuraste en tu backend
                 const respuesta = await fetch('/api/herramientas'); 
                 const herramientas = await respuesta.json();
                 
                 const tbody = document.getElementById('tabla-herramientas');
                 const msjVacio = document.getElementById('mensaje-vacio');
                 
-                tbody.innerHTML = ''; // Limpiar tabla
+                tbody.innerHTML = ''; 
                 
                 if(herramientas.length === 0) {
                     msjVacio.classList.remove('hidden');
@@ -190,11 +220,10 @@
                     });
                 }
             } catch (error) {
-                console.error("Error al cargar la base de datos:", error);
+                console.error("Error al cargar datos:", error);
             }
         }
 
-        // Función para filtrar herramientas en vivo (texto o voz)
         function filtrarHerramientas() {
             const texto = buscador.value.toLowerCase();
             const filas = document.querySelectorAll('.herramienta-fila');
@@ -202,59 +231,50 @@
             filas.forEach(fila => {
                 const clave = fila.querySelector('.clave-herr').innerText.toLowerCase();
                 const desc = fila.querySelector('.desc-herr').innerText.toLowerCase();
-                
-                if (clave.includes(texto) || desc.includes(texto)) {
-                    fila.style.display = '';
-                } else {
-                    fila.style.display = 'none';
-                }
+                fila.style.display = (clave.includes(texto) || desc.includes(texto)) ? '' : 'none';
             });
         }
 
-        // Funciones para Modales
-        function abrirModalAgregar() {
-            document.getElementById('modal-agregar').classList.remove('hidden');
+        function abrirModalAgregar() { document.getElementById('modal-agregar').classList.remove('hidden'); }
+        function cerrarModalAgregar() { 
+            document.getElementById('modal-agregar').classList.add('hidden'); 
+            document.getElementById('form-agregar').reset(); 
         }
 
-        function cerrarModalAgregar() {
-            document.getElementById('modal-agregar').classList.add('hidden');
-            document.getElementById('form-agregar').reset();
-        }
-
-        // Guardar nueva herramienta en la base de datos
         async function guardarHerramienta(evento) {
             evento.preventDefault();
             
-            const nuevaHerramienta = {
-                clave: document.getElementById('nueva-clave').value.toUpperCase(),
-                descripcion: document.getElementById('nueva-desc').value.toUpperCase(),
-                cantidad: parseInt(document.getElementById('nueva-cant').value),
-                posicion: document.getElementById('nueva-pos').value.toUpperCase()
-            };
+            // Usamos FormData para poder enviar la imagen junto con los textos
+            const formData = new FormData();
+            formData.append('clave', document.getElementById('nueva-clave').value.toUpperCase());
+            formData.append('descripcion', document.getElementById('nueva-desc').value.toUpperCase());
+            formData.append('cantidad', document.getElementById('nueva-cant').value);
+            formData.append('posicion', document.getElementById('nueva-pos').value.toUpperCase());
+            
+            // Adjuntamos la imagen solo si el usuario seleccionó una
+            const inputImg = document.getElementById('nueva-img');
+            if (inputImg.files.length > 0) {
+                formData.append('imagen', inputImg.files[0]);
+            }
 
             try {
-                // Cambia '/api/herramientas' por la ruta real de tu backend
                 await fetch('/api/herramientas', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(nuevaHerramienta)
+                    body: formData // Nota: al usar FormData no se pone headers Content-Type
                 });
                 
                 cerrarModalAgregar();
-                cargarCatalogo(); // Recarga la tabla para mostrar el nuevo registro
-                
+                cargarCatalogo(); 
             } catch (error) {
-                alert("Error al guardar en la nube.");
-                console.error(error);
+                alert("Error al guardar la herramienta.");
             }
         }
 
-        function cerrarSesion() {
-            // Aquí puedes borrar el token de localStorage y redirigir al login
-            window.location.href = '/login'; 
+        function descargarExcel() {
+            alert("Esta función descargará el reporte en la siguiente fase de desarrollo.");
         }
 
-        // Cargar las herramientas al abrir la página
+        function cerrarSesion() { window.location.href = '/login'; }
         window.onload = cargarCatalogo;
     </script>
 </body>
