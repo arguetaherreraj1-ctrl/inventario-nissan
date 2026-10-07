@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Nissan</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Librerías de Motor 3D y Animación (La Magia) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
 
+    <!-- Encabezado Principal -->
     <header class="bg-white shadow-md mb-6">
         <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center border-b-4 border-red-600">
             <div>
@@ -22,7 +28,7 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4">
-        <!-- Pestañas -->
+        <!-- Pestañas de Navegación -->
         <div class="flex gap-2 mb-4">
             <button onclick="cambiarPestana('catalogo')" id="btn-catalogo" class="flex-1 bg-red-600 text-white font-bold py-3 rounded shadow-md transition">
                 Catálogo
@@ -32,7 +38,7 @@
             </button>
         </div>
 
-        <!-- Buscador -->
+        <!-- Barra de Controles -->
         <div id="barra-controles" class="flex gap-2 mb-6 bg-white p-2 rounded shadow-md">
             <div class="relative flex-1 flex">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
@@ -45,7 +51,7 @@
             <button onclick="abrirModalAgregar()" class="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded font-bold text-xl shadow-md transition">+</button>
         </div>
 
-        <!-- CATÁLOGO -->
+        <!-- CONTENEDOR: CATÁLOGO -->
         <div id="contenedor-catalogo" class="bg-white rounded shadow-md overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 border-b">
@@ -64,7 +70,7 @@
             </div>
         </div>
 
-        <!-- HISTORIAL -->
+        <!-- CONTENEDOR: HISTORIAL -->
         <div id="contenedor-historial" class="bg-white rounded shadow-md overflow-hidden hidden p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-800">Historial de Movimientos</h2>
@@ -75,7 +81,7 @@
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 border-b">
                     <tr>
-                        <th class="p-3 font-semibold text-gray-600">Fecha Salida</th>
+                        <th class="p-3 font-semibold text-gray-600">Fecha</th>
                         <th class="p-3 font-semibold text-gray-600">Herramienta</th>
                         <th class="p-3 font-semibold text-gray-600">Técnico</th>
                         <th class="p-3 font-semibold text-gray-600">Estado</th>
@@ -88,7 +94,7 @@
         </div>
     </main>
 
-    <!-- Modal Agregar -->
+    <!-- Modal Agregar Herramienta -->
     <div id="modal-agregar" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center px-4 z-50">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h2 class="text-xl font-bold mb-4 text-gray-800">Agregar Nueva Herramienta</h2>
@@ -123,22 +129,195 @@
         </div>
     </div>
 
-    <!-- Modal Ubicación (Visualizador de mapa simple) -->
-    <div id="modal-ubicacion" class="fixed inset-0 bg-black bg-opacity-60 hidden flex justify-center items-center px-4 z-50">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm p-6 text-center border-t-8 border-blue-500">
-            <i class="fa-solid fa-location-dot text-5xl text-blue-500 mb-4 animate-bounce"></i>
-            <h2 class="text-2xl font-black text-gray-800 mb-1" id="ubicacion-clave">NI-50190</h2>
-            <p class="text-gray-500 mb-6 text-sm">Dirígete a la siguiente zona en el almacén:</p>
-            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg py-4 mb-6">
-                <span class="text-4xl font-black text-blue-700 tracking-widest" id="ubicacion-zona">A1</span>
+    <!-- MODAL MAPA 3D INTERACTIVO -->
+    <div id="modal-ubicacion" class="fixed inset-0 bg-black bg-opacity-80 hidden flex justify-center items-center px-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 border-t-8 border-red-600">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black text-gray-800"><i class="fa-solid fa-person-walking text-red-600 mr-2"></i> Simulador de Ruta</h2>
+                <button onclick="cerrarMapa()" class="text-gray-400 hover:text-gray-800 text-3xl font-bold">&times;</button>
             </div>
-            <button onclick="document.getElementById('modal-ubicacion').classList.add('hidden')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded font-bold shadow-md">
-                ¡Entendido!
+            
+            <div class="flex justify-between items-center mb-4 bg-gray-50 p-3 rounded-lg border">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase font-bold">Herramienta</p>
+                    <p class="text-lg font-black text-gray-800" id="ubicacion-clave">NI-000</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Destino</p>
+                    <p class="text-2xl font-black text-red-600 tracking-widest" id="ubicacion-zona">A1</p>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR DEL MOTOR 3D -->
+            <div id="canvas-3d" class="relative w-full h-80 bg-gray-900 border-4 border-gray-300 rounded-lg mb-4 overflow-hidden shadow-inner">
+                <div id="loading-3d" class="absolute inset-0 flex items-center justify-center text-white bg-black bg-opacity-50 z-10">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mr-2"></i> Generando recorrido 3D...
+                </div>
+            </div>
+
+            <button onclick="cerrarMapa()" class="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded font-bold shadow-md transition">
+                Cerrar Mapa
             </button>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // VARIABLES GLOBALES DEL MOTOR 3D
+        // ==========================================
+        let scene, camera, renderer;
+        let estantes = {};
+        let motorIniciado = false;
+        let objMira = { x: 0, y: 0, z: 0 }; // Objeto invisible hacia donde mira la cámara
+
+        // ==========================================
+        // CEREBRO DEL MAPA 3D (Primera Persona)
+        // ==========================================
+        function iniciarMotor3D() {
+            if (motorIniciado) return; // Evita crearlo doble
+            
+            const contenedor = document.getElementById('canvas-3d');
+            
+            // 1. Escena y Cámara
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xdbeafe); // Fondo azul cielo suave
+            camera = new THREE.PerspectiveCamera(60, contenedor.clientWidth / contenedor.clientHeight, 0.1, 100);
+            
+            // 2. Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
+            contenedor.appendChild(renderer.domElement);
+
+            // 3. Iluminación
+            const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(luzAmbiente);
+            const luzDireccional = new THREE.DirectionalLight(0xffffff, 0.8);
+            luzDireccional.position.set(0, 15, 5);
+            scene.add(luzDireccional);
+
+            // 4. Crear el Piso (Cuarto Azul)
+            const pisoGeo = new THREE.PlaneGeometry(24, 20);
+            const pisoMat = new THREE.MeshStandardMaterial({ color: 0x4a7ec7 });
+            const piso = new THREE.Mesh(pisoGeo, pisoMat);
+            piso.rotation.x = -Math.PI / 2;
+            scene.add(piso);
+
+            // 5. Marco de la Puerta Blanca (Entrada)
+            const puertaGeo = new THREE.BoxGeometry(4, 8, 0.5);
+            const puertaMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const puerta = new THREE.Mesh(puertaGeo, puertaMat);
+            puerta.position.set(-8, 4, -9.5); // Arriba a la izquierda del plano
+            scene.add(puerta);
+
+            // 6. Crear los Estantes A, B y C
+            const matEstante = new THREE.MeshStandardMaterial({ color: 0x222222 }); // Negro por defecto
+
+            // Estante A (Largo, Fondo)
+            const geoA = new THREE.BoxGeometry(14, 6, 2.5);
+            estantes['A'] = new THREE.Mesh(geoA, matEstante.clone());
+            estantes['A'].position.set(2, 3, -6);
+            scene.add(estantes['A']);
+
+            // Estante B (Largo, Medio)
+            const geoB = new THREE.BoxGeometry(14, 6, 2.5);
+            estantes['B'] = new THREE.Mesh(geoB, matEstante.clone());
+            estantes['B'].position.set(2, 3, 0);
+            scene.add(estantes['B']);
+
+            // Estante C (Corto, Abajo Derecha)
+            const geoC = new THREE.BoxGeometry(7, 5, 2.5);
+            estantes['C'] = new THREE.Mesh(geoC, matEstante.clone());
+            estantes['C'].position.set(5, 2.5, 7);
+            scene.add(estantes['C']);
+
+            // 7. Bucle de Renderizado
+            function animarEscena() {
+                requestAnimationFrame(animarEscena);
+                camera.lookAt(objMira.x, objMira.y, objMira.z);
+                renderer.render(scene, camera);
+            }
+            animarEscena();
+            
+            motorIniciado = true;
+            document.getElementById('loading-3d').classList.add('hidden');
+        }
+
+        function verUbicacion(clave, zona) {
+            document.getElementById('ubicacion-clave').innerText = clave;
+            document.getElementById('ubicacion-zona').innerText = zona;
+            document.getElementById('modal-ubicacion').classList.remove('hidden');
+            
+            // Retraso de 100ms para asegurar que el modal se dibujó y el canvas tiene tamaño
+            setTimeout(() => {
+                iniciarMotor3D();
+                
+                // Redimensionar por si cambió la pantalla
+                const contenedor = document.getElementById('canvas-3d');
+                renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
+                camera.aspect = contenedor.clientWidth / contenedor.clientHeight;
+                camera.updateProjectionMatrix();
+
+                // Apagar todos los estantes
+                Object.values(estantes).forEach(e => e.material.color.setHex(0x222222));
+
+                // Extraer la letra (A, B o C) y encender el destino
+                const letra = zona.charAt(0).toUpperCase();
+                if (estantes[letra]) {
+                    estantes[letra].material.color.setHex(0xff0000); // Rojo brillante
+                }
+
+                // SECUENCIA DE ANIMACIÓN (Simulador de Caminata)
+                // 1. Colocar cámara en la puerta
+                camera.position.set(-8, 4.5, -9);
+                objMira = { x: -8, y: 4.5, z: -5 }; // Mirando hacia adentro del pasillo inicial
+
+                // 2. Determinar las coordenadas exactas de a dónde caminar según el estante
+                let posicionFinal = { x: 0, y: 0, z: 0 };
+                let objetivoMirada = { x: 0, y: 0, z: 0 };
+
+                if (letra === 'A') {
+                    posicionFinal = { x: 2, y: 4.5, z: -3 };  // Te paras frente a A
+                    objetivoMirada = { x: 2, y: 3, z: -6 };   // Volteas a ver a A
+                } else if (letra === 'B') {
+                    posicionFinal = { x: 2, y: 4.5, z: 3 };   // Te paras frente a B
+                    objetivoMirada = { x: 2, y: 3, z: 0 };    // Volteas a ver a B
+                } else if (letra === 'C') {
+                    posicionFinal = { x: 5, y: 4.5, z: 4 };   // Te paras frente a C
+                    objetivoMirada = { x: 5, y: 2.5, z: 7 };  // Volteas a ver a C
+                }
+
+                // 3. Ejecutar la animación fluida con GSAP (El "GPS")
+                gsap.killTweensOf(camera.position);
+                gsap.killTweensOf(objMira);
+
+                // Caminar hacia la posición
+                gsap.to(camera.position, {
+                    x: posicionFinal.x,
+                    y: posicionFinal.y,
+                    z: posicionFinal.z,
+                    duration: 3, // Tarda 3 segundos caminando
+                    ease: "power2.inOut"
+                });
+
+                // Girar la cabeza hacia el estante mientras camina
+                gsap.to(objMira, {
+                    x: objetivoMirada.x,
+                    y: objetivoMirada.y,
+                    z: objetivoMirada.z,
+                    duration: 3,
+                    ease: "power2.inOut"
+                });
+
+            }, 100); // Fin de setTimeout
+        }
+
+        function cerrarMapa() {
+            document.getElementById('modal-ubicacion').classList.add('hidden');
+        }
+
+        // ==========================================
+        // Lógica de Pestañas y Búsqueda por Voz
+        // ==========================================
         function cambiarPestana(pestana) {
             const btnCat = document.getElementById('btn-catalogo');
             const btnHist = document.getElementById('btn-historial');
@@ -163,7 +342,6 @@
             }
         }
 
-        // Búsqueda por Voz
         const btnMicrofono = document.getElementById('btn-microfono');
         const buscador = document.getElementById('buscador');
         const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -187,7 +365,7 @@
         }
 
         // ==========================================
-        // OPERACIONES DE INVENTARIO
+        // OPERACIONES DE BASE DE DATOS (API)
         // ==========================================
         async function cargarCatalogo() {
             try {
@@ -202,9 +380,7 @@
                 } else {
                     msjVacio.classList.add('hidden');
                     herramientas.forEach(h => {
-                        // Determinar color si se acabaron las piezas
                         const colorDisp = h.cantidad_disponible > 0 ? "text-green-600" : "text-red-600";
-                        
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-gray-50 herramienta-fila";
                         tr.innerHTML = `
@@ -213,8 +389,8 @@
                             <td class="p-3 border-b text-center font-bold ${colorDisp}">${h.cantidad_disponible} / ${h.cantidad_total}</td>
                             <td class="p-3 border-b text-blue-600 font-bold">${h.ubicacion}</td>
                             <td class="p-3 border-b text-center space-x-1 flex justify-center">
-                                <button onclick="verUbicacion('${h.clave}', '${h.ubicacion}')" class="text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-lg transition shadow-sm" title="Ubicación">
-                                    <i class="fa-solid fa-location-dot"></i>
+                                <button onclick="verUbicacion('${h.clave}', '${h.ubicacion}')" class="text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-lg transition shadow-sm" title="Ver Ruta 3D">
+                                    <i class="fa-solid fa-person-walking"></i>
                                 </button>
                                 <button onclick="prestarHerramienta('${h.clave}')" class="text-red-600 bg-red-100 hover:bg-red-200 px-3 py-2 rounded-lg transition shadow-sm" title="Tomar Prestada">
                                     <i class="fa-solid fa-hand-holding"></i>
@@ -243,7 +419,6 @@
                 }
 
                 movimientos.forEach(m => {
-                    // Formato de fecha
                     const fecha = new Date(m.fecha_salida).toLocaleString('es-MX', {dateStyle: 'short', timeStyle: 'short'});
                     const badgeEstado = m.fecha_devolucion 
                         ? `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Devuelta</span>` 
@@ -261,14 +436,6 @@
             } catch (err) { console.error(err); }
         }
 
-        // --- FUNCIONES DE BOTONES ---
-
-        function verUbicacion(clave, zona) {
-            document.getElementById('ubicacion-clave').innerText = clave;
-            document.getElementById('ubicacion-zona').innerText = zona;
-            document.getElementById('modal-ubicacion').classList.remove('hidden');
-        }
-
         async function prestarHerramienta(clave) {
             const nombre = document.getElementById('nombre-tecnico').innerText.replace('Técnico: ', '');
             try {
@@ -277,12 +444,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ herramienta_clave: clave, tecnico_nombre: nombre })
                 });
-                const data = await res.json();
-                if(res.ok) {
-                    cargarCatalogo();
-                } else {
-                    alert(data.error);
-                }
+                if(res.ok) cargarCatalogo();
+                else { const data = await res.json(); alert(data.error); }
             } catch(e) { console.error(e); }
         }
 
@@ -293,12 +456,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ herramienta_clave: clave })
                 });
-                const data = await res.json();
-                if(res.ok) {
-                    cargarCatalogo();
-                } else {
-                    alert(data.error);
-                }
+                if(res.ok) cargarCatalogo();
+                else { const data = await res.json(); alert(data.error); }
             } catch(e) { console.error(e); }
         }
 
@@ -327,9 +486,7 @@
             formData.append('ubicacion', document.getElementById('nueva-pos').value.toUpperCase());
             
             const inputImg = document.getElementById('nueva-img');
-            if (inputImg && inputImg.files.length > 0) {
-                formData.append('foto', inputImg.files[0]);
-            }
+            if (inputImg && inputImg.files.length > 0) formData.append('foto', inputImg.files[0]);
 
             try {
                 const respuesta = await fetch('/agregar_herramienta', { method: 'POST', body: formData });
@@ -338,12 +495,12 @@
                     cargarCatalogo(); 
                 } else {
                     const err = await respuesta.json();
-                    alert(err.error || "Hubo un problema al guardar la herramienta.");
+                    alert(err.error || "Error al guardar la herramienta.");
                 }
             } catch (error) { console.error(error); }
         }
 
-        function descargarExcel() { alert("Programando descarga de Excel en el siguiente paso..."); }
+        function descargarExcel() { alert("Reporte de Finanzas en progreso..."); }
         function cerrarSesion() { window.location.href = '/login'; }
         
         window.onload = () => { cargarCatalogo(); cargarHistorial(); };
