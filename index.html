@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Nissan - Almacén Inteligente 3D</title>
+    <title>Inventario Nissan - Almacén Inteligente 3D y Sistema QR</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,12 +14,62 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <!-- Librerías de Códigos QR (Generador y Escáner con Cámara) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .nissan-red { background-color: #C3002F; }
         .border-nissan { border-color: #C3002F; }
         .text-nissan { color: #C3002F; }
+
+        /* ESTILOS PROFESIONALES DE IMPRESIÓN PARA HOJAS MURALES DE PARED */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            /* Ocultar elementos de la aplicación web */
+            header, main, #modal-ubicacion, #modal-agregar, #modal-login, #modal-escaner-qr, #modal-accion-qr, #modal-qr-individual, .no-print {
+                display: none !important;
+            }
+            /* Mostrar únicamente el modal de hojas murales listo para imprimir */
+            #modal-hojas-murales {
+                position: static !important;
+                display: block !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                z-index: 1 !important;
+            }
+            #modal-hojas-murales .modal-dialog-mural {
+                max-width: 100% !important;
+                width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .pagina-mural {
+                page-break-after: always;
+                break-after: page;
+                margin: 0 !important;
+                padding: 10mm !important;
+                background: white !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .tarjeta-mural {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border: 2px solid #111 !important;
+                box-shadow: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
@@ -36,7 +86,7 @@
                         <span class="text-xl font-black tracking-wider text-slate-900">NISSAN</span>
                         <span class="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-red-100 text-red-700">Taller y Refacciones</span>
                     </div>
-                    <p class="text-xs text-slate-500 font-medium">Control de Inventario y Gemelo Digital 3D</p>
+                    <p class="text-xs text-slate-500 font-medium">Control de Inventario, Códigos QR y Gemelo Digital 3D</p>
                 </div>
             </div>
 
@@ -61,7 +111,7 @@
     <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
 
         <!-- RESUMEN EN TARJETAS (KPIs) -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Herramientas</p>
@@ -79,6 +129,16 @@
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
                     <i class="fa-solid fa-hand-holding-hand"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Códigos QR Listos</p>
+                    <p class="text-2xl font-black text-red-600" id="kpi-qr">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-qrcode"></i>
                 </div>
             </div>
 
@@ -103,7 +163,7 @@
             </button>
         </div>
 
-        <!-- Barra de Búsqueda y Agregar -->
+        <!-- Barra de Búsqueda y Botones de Acción (QR y Agregar) -->
         <div id="barra-controles" class="flex flex-col sm:flex-row gap-3 mb-6 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
             <div class="relative flex-1 flex">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
@@ -116,7 +176,13 @@
                 </button>
             </div>
             
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="abrirEscanearQR()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-lg font-bold text-sm shadow-md transition flex items-center gap-2">
+                    <i class="fa-solid fa-qrcode text-red-500"></i> Escanear QR
+                </button>
+                <button onclick="abrirHojasMurales()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-4 py-2.5 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2" title="Generar e imprimir hojas para la pared">
+                    <i class="fa-solid fa-print text-red-600"></i> Hojas QR para Pared
+                </button>
                 <button onclick="abrirModalAgregar()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-md transition flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Nueva Herramienta
                 </button>
@@ -177,6 +243,171 @@
             </div>
         </div>
     </main>
+
+    <!-- ======================================================= -->
+    <!-- MODAL HOJAS MURALES QR PARA LA PARED (ORGANIZADOR E IMPRESIÓN) -->
+    <!-- ======================================================= -->
+    <div id="modal-hojas-murales" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
+        <div class="modal-dialog-mural bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Header Modal -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center border-b border-slate-800 no-print">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center font-bold text-white shadow-md">
+                        <i class="fa-solid fa-print"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-black tracking-wide">HOJAS MURALES CON CÓDIGOS QR PARA LA PARED</h2>
+                        <p class="text-xs text-slate-400">Organizadas por inicial o categoría para consulta rápida de los técnicos</p>
+                    </div>
+                </div>
+                <button onclick="cerrarHojasMurales()" class="text-slate-400 hover:text-white text-2xl font-bold transition">&times;</button>
+            </div>
+
+            <!-- Barra de Configuración y Filtros de Hoja -->
+            <div class="bg-slate-50 p-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 no-print">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Criterio de Organización</label>
+                        <select id="criterio-agrupacion" onchange="generarHojasMurales()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-red-500">
+                            <option value="inicial">Por 1er Carácter de la Clave (Letra o Número)</option>
+                            <option value="serie">Por Prefijo / Serie (Ej: NI-1, NI-2, NI-3)</option>
+                            <option value="estante">Por Estante del Almacén 3D (A, B, C)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Filtrar Hoja Específica</label>
+                        <select id="filtro-grupo-hoja" onchange="generarHojasMurales()" class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-red-500">
+                            <option value="todos">Imprimir Todas las Hojas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg text-xs font-black shadow-md flex items-center gap-2 transition">
+                        <i class="fa-solid fa-print text-sm"></i> Imprimir Hojas (PDF / Impresora)
+                    </button>
+                    <button onclick="cerrarHojasMurales()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-lg text-xs font-bold transition">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenedor con Scroll de las Hojas Imprimibles -->
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-200/70" id="contenedor-scroll-hojas">
+                <div id="contenedor-hojas-murales" class="space-y-8 max-w-4xl mx-auto">
+                    <!-- Se inyectan las hojas dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODAL ESCÁNER QR CON LA CÁMARA DEL DISPOSITIVO -->
+    <!-- ======================================================= -->
+    <div id="modal-escaner-qr" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 flex flex-col">
+            <div class="px-5 py-3.5 bg-slate-900 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center font-bold text-white">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black tracking-wide">LECTOR DE CÓDIGO QR</h3>
+                        <p class="text-[11px] text-slate-400">Apunta a la hoja en la pared o a la pieza</p>
+                    </div>
+                </div>
+                <button onclick="cerrarEscanearQR()" class="text-slate-400 hover:text-white text-2xl font-bold transition">&times;</button>
+            </div>
+
+            <div class="p-4 bg-slate-950 flex flex-col items-center">
+                <div id="lector-qr" class="w-full max-w-[320px] rounded-xl overflow-hidden border-2 border-red-500 shadow-inner"></div>
+                <p class="text-xs text-slate-400 mt-3 text-center">
+                    <i class="fa-solid fa-camera mr-1 text-red-500"></i> Mantén el código QR centrado en el recuadro
+                </p>
+            </div>
+
+            <!-- Búsqueda manual por si el usuario no tiene cámara -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">¿No tienes cámara? Ingresa la clave</label>
+                <div class="flex gap-2">
+                    <input type="text" id="input-clave-manual" placeholder="Ej. NI-101" class="flex-1 border rounded-lg px-3 py-1.5 text-xs uppercase font-mono font-bold focus:ring-2 focus:ring-red-500">
+                    <button onclick="procesarClaveManual()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Buscar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODAL DE ACCIÓN RÁPIDA TRAS ESCANEAR QR -->
+    <!-- ======================================================= -->
+    <div id="modal-accion-qr" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-200 text-center">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-black mb-3 shadow-inner">
+                <i class="fa-solid fa-wrench"></i>
+            </div>
+            <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Herramienta Identificada</span>
+            <h3 class="text-2xl font-black text-slate-900 mt-1" id="qr-detectado-clave">NI-000</h3>
+            <p class="text-sm font-semibold text-slate-600 mt-1 mb-4" id="qr-detectado-desc">Descripción</p>
+
+            <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs mb-5">
+                <div>
+                    <span class="text-slate-400 block font-bold uppercase">Ubicación 3D</span>
+                    <span class="text-base font-black text-red-600" id="qr-detectado-pos">A1</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-bold uppercase">Disponibilidad</span>
+                    <span class="text-base font-black text-slate-800" id="qr-detectado-disp">1 / 1</span>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="space-y-2">
+                <button onclick="accionQRVer3D()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-location-dot"></i> Ver Ruta en el Almacén 3D
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="accionQRPedir()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-hand-holding"></i> Pedir Prestada
+                    </button>
+                    <button onclick="accionQRDevolver()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i> Devolver Pieza
+                    </button>
+                </div>
+                <button onclick="cerrarAccionQR()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl font-semibold text-xs transition mt-2">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODAL QR INDIVIDUAL (ETIQUETA UNITARIA) -->
+    <!-- ======================================================= -->
+    <div id="modal-qr-individual" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 border border-slate-200 text-center">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-black text-slate-800">Etiqueta QR de la Pieza</h3>
+                <button onclick="cerrarQRIndividual()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+            </div>
+
+            <div class="bg-white p-4 border-2 border-slate-900 rounded-xl my-3 inline-block shadow-sm">
+                <div id="contenedor-qr-individual" class="flex justify-center"></div>
+                <p class="font-black text-xl text-slate-900 tracking-wider mt-2" id="qr-indiv-clave">NI-000</p>
+                <p class="text-xs text-slate-600 font-medium max-w-[200px] truncate mx-auto" id="qr-indiv-desc">-</p>
+                <span class="inline-block mt-2 bg-red-600 text-white text-[11px] font-black px-3 py-0.5 rounded-full" id="qr-indiv-pos">A1</span>
+            </div>
+
+            <div class="flex gap-2 mt-2">
+                <button onclick="imprimirEtiquetaUnitaria()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-xs font-bold transition shadow">
+                    <i class="fa-solid fa-print mr-1"></i> Imprimir Etiqueta
+                </button>
+                <button onclick="cerrarQRIndividual()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL MAPA 3D INTERACTIVO -->
     <div id="modal-ubicacion" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
@@ -347,6 +578,8 @@
         let motorIniciado = false;
         let posDestinoGlobal = null;
         let animacionTween = null;
+        let html5QrScanner = null;
+        let herramientaActivaQR = null;
 
         // ==========================================
         // 1. CONSTRUCCIÓN DETALLADA DEL ALMACÉN 3D
@@ -439,10 +672,9 @@
 
         // --- Creador de Piso Industrial ---
         function crearPisoIndustrial(ancho, prof) {
-            // Plano base de piso
             const geo = new THREE.PlaneGeometry(ancho, prof);
             const mat = new THREE.MeshStandardMaterial({
-                color: 0x1e293b, // Gris azulado epóxico
+                color: 0x1e293b,
                 roughness: 0.35,
                 metalness: 0.15
             });
@@ -451,10 +683,8 @@
             piso.receiveShadow = true;
             scene.add(piso);
 
-            // Líneas de delimitación peatonal amarillas (Pasillo central)
-            const matLinea = new THREE.MeshBasicMaterial({ color: 0xfacc15 }); // Amarillo seguridad
-            
-            // Línea divisoria de pasillo seguro
+            // Líneas de delimitación peatonal amarillas
+            const matLinea = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
             const lineaGeo = new THREE.PlaneGeometry(0.15, prof - 2);
             const linea1 = new THREE.Mesh(lineaGeo, matLinea);
             linea1.rotation.x = -Math.PI / 2;
@@ -476,33 +706,29 @@
             const matPared = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
             const grupoParedes = new THREE.Group();
 
-            // Pared Trasera (Norte - Z negativo)
             const pNorte = new THREE.Mesh(new THREE.BoxGeometry(ancho, alto, 0.4), matPared);
             pNorte.position.set(0, alto / 2, -prof / 2);
             grupoParedes.add(pNorte);
 
-            // Pared Sur (Z positivo)
             const pSur = new THREE.Mesh(new THREE.BoxGeometry(ancho, alto, 0.4), matPared);
             pSur.position.set(0, alto / 2, prof / 2);
             grupoParedes.add(pSur);
 
-            // Pared Este (Derecha)
             const pEste = new THREE.Mesh(new THREE.BoxGeometry(0.4, alto, prof), matPared);
             pEste.position.set(ancho / 2, alto / 2, 0);
             grupoParedes.add(pEste);
 
-            // Pared Oeste (Izquierda)
             const pOeste = new THREE.Mesh(new THREE.BoxGeometry(0.4, alto, prof), matPared);
             pOeste.position.set(-ancho / 2, alto / 2, 0);
             grupoParedes.add(pOeste);
 
-            // MARCO Y LETRERO DE LA PUERTA (Entrada Arriba a la Izquierda como en el dibujo)
+            // Puerta
             const matPuerta = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
             const puerta = new THREE.Mesh(new THREE.BoxGeometry(3.5, 4.2, 0.5), matPuerta);
             puerta.position.set(-7.5, 2.1, -prof / 2 + 0.1);
             grupoParedes.add(puerta);
 
-            // Letrero ENTRADA en la puerta
+            // Letrero ENTRADA
             const texPuerta = crearTexturaLetrero("ACCESO TALLER", "#C3002F", "#FFFFFF");
             const placaEntrada = new THREE.Mesh(
                 new THREE.PlaneGeometry(3, 0.6),
@@ -519,48 +745,39 @@
             const rack = new THREE.Group();
             rack.userData = { id: id, niveles: [] };
 
-            // Materiales de almacén industrial
-            const matPostes = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.5, roughness: 0.4 }); // Azul Mecalux
-            const matVigas = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.3, roughness: 0.5 });  // Naranja seguridad
-            const matBalda = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.2, roughness: 0.6 });  // Baldas de chapa/madera
+            const matPostes = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.5, roughness: 0.4 });
+            const matVigas = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.3, roughness: 0.5 });
+            const matBalda = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.2, roughness: 0.6 });
 
-            // 1. Postes verticales (Patas)
-            const radioPoste = 0.09;
             const geoPoste = new THREE.BoxGeometry(0.16, alto, 0.16);
             const numDivisiones = Math.max(2, Math.floor(largo / 3.2));
             const pasoX = largo / numDivisiones;
 
             for (let i = 0; i <= numDivisiones; i++) {
                 const xLocal = -largo / 2 + i * pasoX;
-                // Poste frontal
                 const p1 = new THREE.Mesh(geoPoste, matPostes);
                 p1.position.set(xLocal, alto / 2, profundidad / 2);
                 p1.castShadow = true;
                 rack.add(p1);
 
-                // Poste trasero
                 const p2 = new THREE.Mesh(geoPoste, matPostes);
                 p2.position.set(xLocal, alto / 2, -profundidad / 2);
                 p2.castShadow = true;
                 rack.add(p2);
             }
 
-            // 2. Niveles / Baldas
             const alturaNivel = alto / (numNiveles + 0.3);
             for (let n = 1; n <= numNiveles; n++) {
                 const yNivel = n * alturaNivel - 0.4;
 
-                // Viga frontal
                 const vFrontal = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.14, 0.08), matVigas);
                 vFrontal.position.set(0, yNivel, profundidad / 2);
                 rack.add(vFrontal);
 
-                // Viga trasera
                 const vTrasera = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.14, 0.08), matVigas);
                 vTrasera.position.set(0, yNivel, -profundidad / 2);
                 rack.add(vTrasera);
 
-                // Plataforma / Balda del nivel
                 const balda = new THREE.Mesh(
                     new THREE.BoxGeometry(largo - 0.1, 0.06, profundidad - 0.1),
                     matBalda.clone()
@@ -570,14 +787,10 @@
                 balda.userData = { rack: id, nivel: n, yMundial: yNivel };
                 rack.add(balda);
 
-                // Guardar referencia para iluminarlo dinámicamente
                 rack.userData.niveles.push(balda);
-
-                // Agregar cajas / contenedores de piezas decorativas en cada balda
                 agregarCajasDecorativas(rack, largo, profundidad, yNivel + 0.25);
             }
 
-            // 3. Letrero 3D en la parte superior del Rack
             const texLetrero = crearTexturaLetrero(titulo, "#1E293B", "#FFFFFF");
             const placaRack = new THREE.Mesh(
                 new THREE.PlaneGeometry(Math.min(largo, 6), 0.7),
@@ -591,14 +804,13 @@
             return rack;
         }
 
-        // Cajas y gavetas de herramientas en los estantes
         function agregarCajasDecorativas(rack, largo, prof, y) {
             const coloresCajas = [0xef4444, 0x3b82f6, 0xf59e0b, 0x64748b];
             const numCajas = Math.floor(largo / 1.4);
             const paso = largo / (numCajas + 1);
 
             for (let i = 1; i <= numCajas; i++) {
-                if (Math.random() > 0.8) continue; // Variabilidad
+                if (Math.random() > 0.8) continue;
                 const color = coloresCajas[Math.floor(Math.random() * coloresCajas.length)];
                 const caja = new THREE.Mesh(
                     new THREE.BoxGeometry(0.7 + Math.random() * 0.4, 0.4 + Math.random() * 0.3, prof * 0.65),
@@ -610,7 +822,6 @@
             }
         }
 
-        // Generador de texturas de texto nítidas para letreros
         function crearTexturaLetrero(texto, colorFondo, colorTexto) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
@@ -620,7 +831,6 @@
             ctx.fillStyle = colorFondo;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Borde
             ctx.strokeStyle = '#FFFFFF';
             ctx.lineWidth = 6;
             ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
@@ -634,19 +844,16 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // Marcador holográfico flotante
         function crearMarcadorPin() {
             const pinGroup = new THREE.Group();
 
-            // Cono invertido rojo brillante
             const geoCono = new THREE.ConeGeometry(0.35, 0.9, 16);
-            geoCono.rotateX(Math.PI); // Apuntando hacia abajo
+            geoCono.rotateX(Math.PI);
             const matCono = new THREE.MeshBasicMaterial({ color: 0xff0033 });
             const cono = new THREE.Mesh(geoCono, matCono);
             cono.position.y = 0.5;
             pinGroup.add(cono);
 
-            // Esfera luminosa arriba del cono
             const esfera = new THREE.Mesh(
                 new THREE.SphereGeometry(0.2, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -671,13 +878,11 @@
             setTimeout(() => {
                 iniciarMotor3D();
 
-                // Reajustar dimensiones del canvas
                 const contenedor = document.getElementById('canvas-3d');
                 renderer.setSize(contenedor.clientWidth, contenedor.clientHeight);
                 camera.aspect = contenedor.clientWidth / contenedor.clientHeight;
                 camera.updateProjectionMatrix();
 
-                // Resetear colores de todos los estantes
                 Object.values(racks).forEach(r => {
                     r.userData.niveles.forEach(balda => {
                         balda.material.color.setHex(0x94a3b8);
@@ -685,7 +890,6 @@
                     });
                 });
 
-                // Extraer letra (A, B, C) y nivel numérico (1, 2, 3)
                 const letra = ubicacion.charAt(0).toUpperCase();
                 const nivelNum = parseInt(ubicacion.slice(1)) || 1;
 
@@ -694,7 +898,6 @@
                 let posZ = rackTarget.position.z;
                 let posY = 2;
 
-                // Iluminar la balda / nivel exacto
                 const niveles = rackTarget.userData.niveles;
                 const baldaIdx = Math.min(Math.max(nivelNum - 1, 0), niveles.length - 1);
                 const baldaObjetivo = niveles[baldaIdx];
@@ -705,11 +908,9 @@
                     posY = baldaObjetivo.userData.yMundial || 2.5;
                 }
 
-                // Posicionar el Pin Marcador sobre la pieza
                 pinMarcador.position.set(posX - 1.5, posY + 1.2, posZ);
                 pinMarcador.visible = true;
 
-                // Guardar coordenadas de destino para simulación
                 posDestinoGlobal = {
                     rackX: posX,
                     rackZ: posZ,
@@ -717,21 +918,15 @@
                     letra: letra
                 };
 
-                // Iniciar la caminata guiada
                 iniciarCaminata();
-
             }, 100);
         }
 
-        // Simulador de Caminata Guiada en Primera Persona
         function iniciarCaminata() {
             if (!posDestinoGlobal) return;
             controls.enabled = false;
 
-            // 1. Punto de partida: La puerta de entrada (-7.5, 2.2, -9.0)
             camera.position.set(-7.5, 2.2, -9.0);
-            
-            // Vector al que mira la cámara
             let puntoMira = { x: -7.5, y: 2.0, z: -4.0 };
             camera.lookAt(puntoMira.x, puntoMira.y, puntoMira.z);
 
@@ -745,7 +940,6 @@
                 }
             });
 
-            // PASO 1: Caminar por el pasillo central libre hasta la altura del estante
             tl.to(camera.position, {
                 x: -5.0,
                 z: posDestinoGlobal.rackZ,
@@ -759,7 +953,6 @@
                 ease: "power2.inOut"
             }, "<");
 
-            // PASO 2: Doblar y caminar frente al estante exacto
             tl.to(camera.position, {
                 x: posDestinoGlobal.rackX - 3.8,
                 y: Math.max(posDestinoGlobal.piezY + 0.5, 2.2),
@@ -776,7 +969,6 @@
             }, "<");
         }
 
-        // Vista Orbital Libre (Rotación con mouse)
         function vistaOrbitalLibre() {
             controls.enabled = true;
             gsap.to(camera.position, {
@@ -789,7 +981,6 @@
             controls.target.set(2, 2, 0);
         }
 
-        // Vista Aérea (Plano 2D superior)
         function vistaAerea() {
             controls.enabled = true;
             gsap.to(camera.position, {
@@ -838,7 +1029,6 @@
             lista.forEach(h => {
                 const dispColor = h.cantidad_disponible > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-700 bg-red-50 border-red-200';
                 
-                // Miniatura de foto
                 const imgTag = h.foto_url 
                     ? `<img src="${h.foto_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto" alt="foto">`
                     : `<div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto text-xs"><i class="fa-solid fa-wrench"></i></div>`;
@@ -860,10 +1050,14 @@
                         </span>
                     </td>
                     <td class="p-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5">
+                        <div class="flex items-center justify-center gap-1.5 flex-wrap">
                             <button onclick="verUbicacion('${h.clave}', '${h.descripcion.replace(/'/g, "\\'")}', '${h.ubicacion}')" 
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5" title="Ver en 3D">
                                 <i class="fa-solid fa-location-dot"></i> Ver 3D
+                            </button>
+                            <button onclick="verQRIndividual('${h.clave}')" 
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1" title="Ver / Imprimir QR individual">
+                                <i class="fa-solid fa-qrcode text-red-600"></i> QR
                             </button>
                             <button onclick="prestarHerramienta('${h.clave}')" 
                                 class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1" title="Tomar Prestada">
@@ -990,11 +1184,9 @@
 
             document.getElementById('kpi-total').innerText = herramientasData.length;
             document.getElementById('kpi-prestadas').innerText = Math.max(prestadas, 0);
+            document.getElementById('kpi-qr').innerText = herramientasData.length;
         }
 
-        // ==========================================
-        // 4. EXPORTAR HISTORIAL A EXCEL REAL (.XLSX)
-        // ==========================================
         function exportarExcelHistorial() {
             if (historialData.length === 0) {
                 alert("No hay registros en la bitácora para exportar.");
@@ -1015,8 +1207,275 @@
             XLSX.writeFile(wb, `Inventario_Nissan_Bitacora_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
+        // =======================================================
+        // 4. GENERADOR DE HOJAS MURALES CON QR PARA LA PARED
+        // =======================================================
+        function abrirHojasMurales() {
+            if (herramientasData.length === 0) {
+                alert("No hay herramientas registradas para generar hojas murales.");
+                return;
+            }
+            actualizarSelectorFiltroGrupos();
+            generarHojasMurales();
+            document.getElementById('modal-hojas-murales').classList.remove('hidden');
+        }
+
+        function cerrarHojasMurales() {
+            document.getElementById('modal-hojas-murales').classList.add('hidden');
+        }
+
+        function actualizarSelectorFiltroGrupos() {
+            const criterio = document.getElementById('criterio-agrupacion').value;
+            const grupos = agruparHerramientas(herramientasData, criterio);
+            const select = document.getElementById('filtro-grupo-hoja');
+            
+            select.innerHTML = '<option value="todos">Imprimir Todas las Hojas</option>';
+            Object.keys(grupos).sort().forEach(g => {
+                select.innerHTML += `<option value="${g}">Solo Grupo: ${g} (${grupos[g].length} piezas)</option>`;
+            });
+        }
+
+        function agruparHerramientas(lista, criterio) {
+            const grupos = {};
+            lista.forEach(h => {
+                let claveGrupo = 'OTROS';
+                if (criterio === 'inicial') {
+                    // Primer carácter (letra o número)
+                    claveGrupo = (h.clave.charAt(0) || 'X').toUpperCase();
+                } else if (criterio === 'serie') {
+                    // Prefijo como NI-1, NI-2, etc.
+                    const match = h.clave.match(/^[A-Za-z]+-?\d/);
+                    claveGrupo = match ? match[0].toUpperCase() : (h.clave.charAt(0) || 'X').toUpperCase();
+                } else if (criterio === 'estante') {
+                    // Estante A, B, C
+                    claveGrupo = 'ESTANTE ' + (h.ubicacion.charAt(0) || 'A').toUpperCase();
+                }
+
+                if (!grupos[claveGrupo]) grupos[claveGrupo] = [];
+                grupos[claveGrupo].push(h);
+            });
+            return grupos;
+        }
+
+        function generarHojasMurales() {
+            const criterio = document.getElementById('criterio-agrupacion').value;
+            const filtro = document.getElementById('filtro-grupo-hoja').value;
+            const contenedor = document.getElementById('contenedor-hojas-murales');
+            contenedor.innerHTML = '';
+
+            const grupos = agruparHerramientas(herramientasData, criterio);
+            const gruposOrdenados = Object.keys(grupos).sort();
+
+            gruposOrdenados.forEach(nombreGrupo => {
+                if (filtro !== 'todos' && filtro !== nombreGrupo) return;
+
+                const listaPiezas = grupos[nombreGrupo];
+
+                // Crear Página Mural (Estilo A4/Carta)
+                const hojaDiv = document.createElement('div');
+                hojaDiv.className = "pagina-mural bg-white rounded-xl shadow-md p-8 border border-slate-300 relative";
+                
+                // Cabecera Oficial Nissan para la pared
+                hojaDiv.innerHTML = `
+                    <div class="border-b-4 border-red-600 pb-4 mb-6 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-red-600 text-white font-black text-2xl flex items-center justify-center rounded-lg shadow-sm">
+                                N
+                            </div>
+                            <div>
+                                <h1 class="text-2xl font-black text-slate-900 tracking-wider">NISSAN TALLER Y REFACCIONES</h1>
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Catálogo Mural para Pared - Escaneo Rápido de Herramientas</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-400 uppercase block">Grupo / Inicial</span>
+                            <span class="text-2xl font-black text-red-600 bg-red-50 border border-red-200 px-3 py-1 rounded-lg inline-block">${nombreGrupo}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="grid-${nombreGrupo}"></div>
+
+                    <div class="mt-6 pt-3 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-400">
+                        <span><i class="fa-solid fa-camera mr-1"></i> Escanea el código con tu celular para solicitar la pieza o ver la ruta en el almacén 3D</span>
+                        <span>Total en esta hoja: <b>${listaPiezas.length} piezas</b></span>
+                    </div>
+                `;
+
+                contenedor.appendChild(hojaDiv);
+
+                // Grid de Tarjetas
+                const gridDiv = hojaDiv.querySelector(`#grid-${nombreGrupo}`);
+                listaPiezas.forEach(pieza => {
+                    const card = document.createElement('div');
+                    card.className = "tarjeta-mural bg-white border-2 border-slate-800 rounded-xl p-3.5 flex flex-col items-center text-center relative";
+                    
+                    const qrId = `qr-${pieza.clave.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    card.innerHTML = `
+                        <div class="w-full flex justify-between items-center mb-1 border-b border-slate-200 pb-1">
+                            <span class="text-[10px] font-black uppercase text-slate-400">CLAVE</span>
+                            <span class="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded">${pieza.ubicacion}</span>
+                        </div>
+                        <div class="text-lg font-black text-slate-900 tracking-wide my-1 font-mono">${pieza.clave}</div>
+                        <div id="${qrId}" class="my-2 p-1.5 bg-white border border-slate-300 rounded-lg flex items-center justify-center"></div>
+                        <p class="text-[11px] font-bold text-slate-700 uppercase leading-snug line-clamp-2 mt-1">${pieza.descripcion}</p>
+                        <div class="mt-2 text-[10px] font-semibold text-slate-500">
+                            Stock: <b class="text-slate-800">${pieza.cantidad_disponible}/${pieza.cantidad_total}</b>
+                        </div>
+                    `;
+                    gridDiv.appendChild(card);
+
+                    // Generar el Código QR
+                    setTimeout(() => {
+                        const elemQR = document.getElementById(qrId);
+                        if (elemQR) {
+                            new QRCode(elemQR, {
+                                text: pieza.clave,
+                                width: 105,
+                                height: 105,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.M
+                            });
+                        }
+                    }, 20);
+                });
+            });
+        }
+
+        // =======================================================
+        // 5. ESCÁNER QR CON CÁMARA Y ACCIÓN RÁPIDA
+        // =======================================================
+        function abrirEscanearQR() {
+            document.getElementById('modal-escaner-qr').classList.remove('hidden');
+            iniciarLectorCamara();
+        }
+
+        function cerrarEscanearQR() {
+            detenerLectorCamara();
+            document.getElementById('modal-escaner-qr').classList.add('hidden');
+        }
+
+        function iniciarLectorCamara() {
+            if (html5QrScanner) {
+                try { html5QrScanner.stop(); } catch(e) {}
+            }
+
+            html5QrScanner = new Html5Qrcode("lector-qr");
+            const config = { fps: 12, qrbox: { width: 220, height: 220 } };
+
+            html5QrScanner.start(
+                { facingMode: "environment" }, // Preferir cámara trasera
+                config,
+                onScanSuccess,
+                (errorMessage) => { /* Escaneo en progreso */ }
+            ).catch(err => {
+                console.warn("No se pudo iniciar la cámara trasera, intentando cualquier cámara:", err);
+                html5QrScanner.start({ facingMode: "user" }, config, onScanSuccess, () => {}).catch(e2 => {
+                    alert("No se pudo acceder a la cámara. Puedes usar la búsqueda manual por clave.");
+                });
+            });
+        }
+
+        function detenerLectorCamara() {
+            if (html5QrScanner) {
+                html5QrScanner.stop().then(() => {
+                    html5QrScanner.clear();
+                    html5QrScanner = null;
+                }).catch(() => {
+                    html5QrScanner = null;
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            detenerLectorCamara();
+            cerrarEscanearQR();
+            procesarClaveDetectada(decodedText);
+        }
+
+        function procesarClaveManual() {
+            const clave = document.getElementById('input-clave-manual').value.trim();
+            if (!clave) return;
+            cerrarEscanearQR();
+            procesarClaveDetectada(clave);
+        }
+
+        function procesarClaveDetectada(claveBruta) {
+            const claveLimpia = claveBruta.trim().toUpperCase();
+            const pieza = herramientasData.find(h => h.clave.toUpperCase() === claveLimpia);
+
+            if (!pieza) {
+                alert(`Código QR escaneado: "${claveLimpia}", pero no se encontró en la base de datos de herramientas.`);
+                return;
+            }
+
+            herramientaActivaQR = pieza;
+            document.getElementById('qr-detectado-clave').innerText = pieza.clave;
+            document.getElementById('qr-detectado-desc').innerText = pieza.descripcion;
+            document.getElementById('qr-detectado-pos').innerText = pieza.ubicacion;
+            document.getElementById('qr-detectado-disp').innerText = `${pieza.cantidad_disponible} / ${pieza.cantidad_total}`;
+            document.getElementById('modal-accion-qr').classList.remove('hidden');
+        }
+
+        function cerrarAccionQR() {
+            document.getElementById('modal-accion-qr').classList.add('hidden');
+            herramientaActivaQR = null;
+        }
+
+        function accionQRVer3D() {
+            if (!herramientaActivaQR) return;
+            const { clave, descripcion, ubicacion } = herramientaActivaQR;
+            cerrarAccionQR();
+            verUbicacion(clave, descripcion, ubicacion);
+        }
+
+        function accionQRPedir() {
+            if (!herramientaActivaQR) return;
+            prestarHerramienta(herramientaActivaQR.clave);
+            cerrarAccionQR();
+        }
+
+        function accionQRDevolver() {
+            if (!herramientaActivaQR) return;
+            devolverHerramienta(herramientaActivaQR.clave);
+            cerrarAccionQR();
+        }
+
+        // =======================================================
+        // 6. QR INDIVIDUAL POR PIEZA
+        // =======================================================
+        function verQRIndividual(clave) {
+            const pieza = herramientasData.find(h => h.clave === clave);
+            if (!pieza) return;
+
+            document.getElementById('qr-indiv-clave').innerText = pieza.clave;
+            document.getElementById('qr-indiv-desc').innerText = pieza.descripcion;
+            document.getElementById('qr-indiv-pos').innerText = `Estante ${pieza.ubicacion}`;
+
+            const contQR = document.getElementById('contenedor-qr-individual');
+            contQR.innerHTML = '';
+            new QRCode(contQR, {
+                text: pieza.clave,
+                width: 140,
+                height: 140,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('modal-qr-individual').classList.remove('hidden');
+        }
+
+        function cerrarQRIndividual() {
+            document.getElementById('modal-qr-individual').classList.add('hidden');
+        }
+
+        function imprimirEtiquetaUnitaria() {
+            window.print();
+        }
+
         // ==========================================
-        // 5. MODALES Y CAMBIO DE TÉCNICO (LOGIN)
+        // 7. MODALES GENERALES Y LOGIN
         // ==========================================
         function abrirModalAgregar() { document.getElementById('modal-agregar').classList.remove('hidden'); }
         function cerrarModalAgregar() { 
