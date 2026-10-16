@@ -63,6 +63,9 @@ def startup_db():
                         cantidad_disponible=item["cantidad"],
                         foto_url=""
                     ))
+                else:
+                    existe.ubicacion = item["ubicacion"]
+                    existe.descripcion = item["descripcion"]
             db.commit()
             print("[OK] Base de datos sincronizada con las piezas oficiales Nissan.")
         except Exception as e:
@@ -127,6 +130,17 @@ def cargar_catalogo_completo(db: Session = Depends(get_db)):
         "mensaje": f"Catálogo sincronizado exitosamente: {agregadas} piezas agregadas, {actualizadas} actualizadas.",
         "total": agregadas + actualizadas
     }
+
+@app.get("/descargar_excel")
+def descargar_excel():
+    ruta = "Inventario_Herramientas_Nissan_Organizado.xlsx"
+    if os.path.exists(ruta):
+        return FileResponse(
+            ruta,
+            filename="Inventario_Herramientas_Nissan_Organizado.xlsx",
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    return {"error": "Archivo no encontrado"}
 
 @app.post("/agregar_herramienta")
 def agregar_herramienta(
