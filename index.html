@@ -110,10 +110,10 @@
                     </div>
                     <div class="text-left text-xs">
                         <span class="text-slate-400 block font-medium text-[10px] hidden sm:block">Técnico activo</span>
-                        <span class="font-bold text-slate-800 text-xs sm:text-sm truncate max-w-[90px] sm:max-w-none block" id="nombre-tecnico">Jorge Argueta</span>
+                        <span class="font-bold text-amber-600 text-xs sm:text-sm truncate max-w-[90px] sm:max-w-none block" id="nombre-tecnico">Sin Identificar</span>
                     </div>
                     <button onclick="abrirModalLogin()" class="ml-1 text-[11px] text-red-600 hover:text-red-700 font-bold underline" title="Cambiar sesión">
-                        Cambiar
+                        Ingresar
                     </button>
                 </div>
             </div>
@@ -605,8 +605,8 @@
         </div>
     </div>
 
-    <!-- MODAL CAMBIAR / REGISTRAR TÉCNICO (LOGIN POR NIP) -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
+    <!-- MODAL CAMBIAR / REGISTRAR TÉCNICO (LOGIN POR NIP - SIEMPRE AL INICIO) -->
+    <div id="modal-login" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex justify-center items-center px-4 z-50">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 border border-slate-200">
             <div class="text-center mb-4">
                 <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold mb-2">
@@ -1210,7 +1210,13 @@
         }
 
         async function prestarHerramienta(clave) {
-            const nombre = document.getElementById('nombre-tecnico').innerText;
+            const nombreElem = document.getElementById('nombre-tecnico');
+            const nombre = nombreElem ? nombreElem.innerText.trim() : '';
+            if (!nombre || nombre === 'Sin Identificar' || nombre === 'Sin iniciar sesión') {
+                alert("Debes ingresar tu NIP de técnico antes de solicitar una herramienta.");
+                abrirModalLogin();
+                return;
+            }
             try {
                 const res = await fetch('/prestar', {
                     method: 'POST',
@@ -1312,9 +1318,15 @@
         // =======================================================
         async function abrirModalConectarTelefono() {
             try {
-                const res = await fetch('/info_red');
-                const data = await res.json();
-                const url = data.url_movil || window.location.href;
+                let url = window.location.origin;
+                const esLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (esLocal) {
+                    try {
+                        const res = await fetch('/info_red');
+                        const data = await res.json();
+                        if (data.url_movil) url = data.url_movil;
+                    } catch (e) {}
+                }
 
                 document.getElementById('texto-url-movil').innerText = url;
 
@@ -1666,7 +1678,7 @@
 
         async function autenticarTecnico(e) {
             e.preventDefault();
-            const nip = document.getElementById('login-nip').value;
+            const nip = document.getElementById('login-nip').value.trim();
             try {
                 const res = await fetch('/login_tecnico', {
                     method: 'POST',
@@ -1675,11 +1687,14 @@
                 });
                 const data = await res.json();
                 if (data.nombre) {
-                    document.getElementById('nombre-tecnico').innerText = data.nombre;
+                    const nombreElem = document.getElementById('nombre-tecnico');
+                    nombreElem.innerText = data.nombre;
+                    nombreElem.classList.remove('text-amber-600');
+                    sessionStorage.setItem('tecnico_activo', data.nombre);
                     cerrarModalLogin();
                     document.getElementById('login-nip').value = '';
                 } else {
-                    alert(data.error || "NIP inválido.");
+                    alert(data.error || "NIP inválido. Intenta nuevamente.");
                 }
             } catch (err) { console.error(err); }
         }
@@ -1758,6 +1773,17 @@
         window.onload = () => {
             cargarCatalogo();
             cargarHistorial();
+
+            // Al abrir o compartir el enlace, siempre exige el login por NIP
+            const tecnicoGuardado = sessionStorage.getItem('tecnico_activo');
+            if (tecnicoGuardado) {
+                const nombreElem = document.getElementById('nombre-tecnico');
+                nombreElem.innerText = tecnicoGuardado;
+                nombreElem.classList.remove('text-amber-600');
+                cerrarModalLogin();
+            } else {
+                abrirModalLogin();
+            }
         };
     </script>
 </body>
