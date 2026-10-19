@@ -142,6 +142,17 @@ def descargar_excel():
         )
     return {"error": "Archivo no encontrado"}
 
+@app.get("/descargar_word")
+def descargar_word():
+    ruta = "Guia_Organizacion_Almacen_Nissan.docx"
+    if os.path.exists(ruta):
+        return FileResponse(
+            ruta,
+            filename="Guia_Organizacion_Almacen_Nissan.docx",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    return {"error": "Archivo Word no encontrado"}
+
 @app.post("/agregar_herramienta")
 def agregar_herramienta(
     clave: str = Form(...),

@@ -201,6 +201,9 @@
                 <a href="/descargar_excel" download class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2.5 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-1.5" title="Descargar Catálogo de 57 Piezas en Excel (.xlsx)">
                     <i class="fa-solid fa-file-excel"></i> Descargar Excel
                 </a>
+                <a href="/descargar_word" download class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 py-2.5 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-1.5" title="Descargar Guía de Organización por Almacén y Estantes en Word (.docx)">
+                    <i class="fa-solid fa-file-word"></i> Guía en Word
+                </a>
                 <button onclick="abrirModalAgregar()" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-bold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-plus"></i> Nueva Herramienta
                 </button>
@@ -412,44 +415,66 @@
     </div>
 
     <!-- ======================================================= -->
-    <!-- MODAL DE ACCIÓN RÁPIDA TRAS ESCANEAR QR -->
+    <!-- MODAL DE ACCIÓN / REGISTRO AUTOMÁTICO TRAS ESCANEAR QR -->
     <!-- ======================================================= -->
-    <div id="modal-accion-qr" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex justify-center items-center px-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 border border-slate-200 text-center">
-            <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-black mb-2 shadow-inner">
-                <i class="fa-solid fa-wrench"></i>
+    <div id="modal-accion-qr" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex justify-center items-center px-4 z-50">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-5 sm:p-6 border border-slate-100 text-center animate-in fade-in zoom-in duration-200">
+            <!-- Icono Dinámico -->
+            <div id="qr-icono-estado" class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-black mb-2.5 shadow-sm">
+                <i class="fa-solid fa-circle-check"></i>
             </div>
-            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Herramienta Identificada</span>
-            <h3 class="text-xl font-black text-slate-900 mt-0.5" id="qr-detectado-clave">NI-000</h3>
-            <p class="text-xs font-semibold text-slate-600 mt-1 mb-3" id="qr-detectado-desc">Descripción</p>
+            
+            <span id="qr-badge-estado" class="text-[10px] sm:text-[11px] uppercase font-black tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block mb-1">
+                ¡Pieza Tomada y Registrada!
+            </span>
+            
+            <h3 class="text-xl font-black text-slate-900 mt-1 font-mono tracking-wide" id="qr-detectado-clave">NI-000</h3>
+            <p class="text-xs font-semibold text-slate-600 mt-0.5 mb-3 line-clamp-2" id="qr-detectado-desc">Descripción</p>
 
-            <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs mb-4">
-                <div>
-                    <span class="text-slate-400 block font-bold uppercase text-[10px]">Ubicación 3D</span>
-                    <span class="text-sm font-black text-red-600" id="qr-detectado-pos">A1</span>
+            <!-- Tarjeta de Detalles del Registro -->
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs mb-4 text-left space-y-1.5">
+                <div class="flex justify-between items-center pb-1.5 border-b border-slate-200">
+                    <span class="text-slate-400 font-bold uppercase text-[10px]">Técnico:</span>
+                    <span class="font-bold text-slate-800 text-xs" id="qr-detectado-tecnico">Jorge Argueta</span>
                 </div>
-                <div>
-                    <span class="text-slate-400 block font-bold uppercase text-[10px]">Disponibilidad</span>
-                    <span class="text-sm font-black text-slate-800" id="qr-detectado-disp">1 / 1</span>
+                <div class="flex justify-between items-center pb-1.5 border-b border-slate-200">
+                    <span class="text-slate-400 font-bold uppercase text-[10px]">Ubicación en Almacén:</span>
+                    <span class="font-black text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs" id="qr-detectado-pos">A1</span>
+                </div>
+                <div class="flex justify-between items-center pb-1.5 border-b border-slate-200">
+                    <span class="text-slate-400 font-bold uppercase text-[10px]">Registro Bitácora:</span>
+                    <span class="font-bold text-emerald-700 text-[11px]"><i class="fa-solid fa-file-excel text-emerald-600 mr-1"></i> Guardado en Excel</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 font-bold uppercase text-[10px]">Disponibilidad:</span>
+                    <span class="font-bold text-slate-700 text-xs" id="qr-detectado-disp">1 / 1</span>
                 </div>
             </div>
 
             <!-- Acciones -->
             <div class="space-y-2">
-                <button onclick="accionQRVer3D()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-location-dot"></i> Ver Ruta en Almacén 3D
-                </button>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="accionQRPedir()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-hand-holding"></i> Pedir
+                <div id="qr-botones-toma" class="space-y-2">
+                    <button onclick="accionQRVer3D()" class="w-full bg-slate-900 hover:bg-black text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-location-dot text-red-500"></i> Ver Ubicación 3D en Almacén
                     </button>
-                    <button onclick="accionQRDevolver()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-rotate-left"></i> Devolver
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="deshacerTomaQR()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-rotate-left"></i> Deshacer
+                        </button>
+                        <button onclick="cerrarAccionQR()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-check"></i> Aceptar
+                        </button>
+                    </div>
+                </div>
+
+                <div id="qr-botones-devolucion" class="hidden space-y-2">
+                    <button onclick="confirmarDevolucionQR()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> Confirmar Devolución al Estante
+                    </button>
+                    <button onclick="cerrarAccionQR()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl font-semibold text-xs transition">
+                        Cancelar / Cerrar
                     </button>
                 </div>
-                <button onclick="cerrarAccionQR()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl font-semibold text-xs transition mt-1">
-                    Cerrar
-                </button>
             </div>
         </div>
     </div>
@@ -1597,7 +1622,7 @@
             procesarClaveDetectada(clave);
         }
 
-        function procesarClaveDetectada(claveBruta) {
+        async function procesarClaveDetectada(claveBruta) {
             const claveLimpia = claveBruta.trim().toUpperCase();
             const pieza = herramientasData.find(h => h.clave.toUpperCase() === claveLimpia);
 
@@ -1606,12 +1631,71 @@
                 return;
             }
 
+            const nombreElem = document.getElementById('nombre-tecnico');
+            const tecnicoNombre = nombreElem ? nombreElem.innerText.trim() : '';
+
+            if (!tecnicoNombre || tecnicoNombre === 'Sin Identificar' || tecnicoNombre === 'Sin iniciar sesión') {
+                alert("Debes ingresar tu NIP de técnico antes de escanear para registrar la toma de la pieza a tu nombre.");
+                abrirModalLogin();
+                return;
+            }
+
             herramientaActivaQR = pieza;
             document.getElementById('qr-detectado-clave').innerText = pieza.clave;
             document.getElementById('qr-detectado-desc').innerText = pieza.descripcion;
             document.getElementById('qr-detectado-pos').innerText = pieza.ubicacion;
-            document.getElementById('qr-detectado-disp').innerText = `${pieza.cantidad_disponible} / ${pieza.cantidad_total}`;
-            document.getElementById('modal-accion-qr').classList.remove('hidden');
+            document.getElementById('qr-detectado-tecnico').innerText = tecnicoNombre;
+
+            const icono = document.getElementById('qr-icono-estado');
+            const badge = document.getElementById('qr-badge-estado');
+            const botonesToma = document.getElementById('qr-botones-toma');
+            const botonesDev = document.getElementById('qr-botones-devolucion');
+
+            // CASO 1: LA PIEZA TIENE DISPONIBILIDAD -> REGISTRAR AUTOMÁTICAMENTE LA SALIDA / TOMA
+            if (pieza.cantidad_disponible > 0) {
+                try {
+                    const res = await fetch('/prestar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ herramienta_clave: pieza.clave, tecnico_nombre: tecnicoNombre })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                        
+                        await cargarCatalogo();
+                        await cargarHistorial();
+
+                        icono.className = "w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-black mb-2.5 shadow-sm";
+                        icono.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                        badge.className = "text-[10px] sm:text-[11px] uppercase font-black tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block mb-1";
+                        badge.innerText = "¡Pieza Tomada y Registrada!";
+                        
+                        document.getElementById('qr-detectado-disp').innerHTML = `<span class="text-amber-600 font-bold">${Math.max(pieza.cantidad_disponible - 1, 0)} / ${pieza.cantidad_total} (En uso por ti)</span>`;
+                        
+                        botonesToma.classList.remove('hidden');
+                        botonesDev.classList.add('hidden');
+                        document.getElementById('modal-accion-qr').classList.remove('hidden');
+                    } else {
+                        alert(data.error || "No se pudo registrar la pieza.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Error de conexión al registrar la pieza.");
+                }
+            } else {
+                // CASO 2: LA PIEZA ESTÁ EN USO -> OFRECER DEVOLUCIÓN DIRECTA AL ESTANTE
+                icono.className = "w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-black mb-2.5 shadow-sm";
+                icono.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
+                badge.className = "text-[10px] sm:text-[11px] uppercase font-black tracking-wider text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block mb-1";
+                badge.innerText = "Pieza en Uso: ¿Deseas Devolverla?";
+
+                document.getElementById('qr-detectado-disp').innerHTML = `<span class="text-red-600 font-bold">0 / ${pieza.cantidad_total} (En Préstamo)</span>`;
+
+                botonesToma.classList.add('hidden');
+                botonesDev.classList.remove('hidden');
+                document.getElementById('modal-accion-qr').classList.remove('hidden');
+            }
         }
 
         function cerrarAccionQR() {
@@ -1619,23 +1703,24 @@
             herramientaActivaQR = null;
         }
 
+        async function deshacerTomaQR() {
+            if (!herramientaActivaQR) return;
+            await devolverHerramienta(herramientaActivaQR.clave);
+            cerrarAccionQR();
+            alert("Operación cancelada: La pieza se marcó nuevamente como devuelta.");
+        }
+
+        async function confirmarDevolucionQR() {
+            if (!herramientaActivaQR) return;
+            await devolverHerramienta(herramientaActivaQR.clave);
+            cerrarAccionQR();
+        }
+
         function accionQRVer3D() {
             if (!herramientaActivaQR) return;
             const { clave, descripcion, ubicacion } = herramientaActivaQR;
             cerrarAccionQR();
             verUbicacion(clave, descripcion, ubicacion);
-        }
-
-        function accionQRPedir() {
-            if (!herramientaActivaQR) return;
-            prestarHerramienta(herramientaActivaQR.clave);
-            cerrarAccionQR();
-        }
-
-        function accionQRDevolver() {
-            if (!herramientaActivaQR) return;
-            devolverHerramienta(herramientaActivaQR.clave);
-            cerrarAccionQR();
         }
 
         // =======================================================
