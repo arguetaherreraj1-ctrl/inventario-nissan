@@ -134,24 +134,40 @@ def cargar_catalogo_completo(db: Session = Depends(get_db)):
 @app.get("/descargar_excel")
 def descargar_excel():
     ruta = "Inventario_Herramientas_Nissan_Organizado.xlsx"
+    if not os.path.exists(ruta):
+        try:
+            from generar_excel import generar_excel
+            generar_excel(ruta)
+        except Exception as e:
+            print("Aviso generando excel en demanda:", e)
+
     if os.path.exists(ruta):
         return FileResponse(
             ruta,
             filename="Inventario_Herramientas_Nissan_Organizado.xlsx",
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="Inventario_Herramientas_Nissan_Organizado.xlsx"'}
         )
-    return {"error": "Archivo no encontrado"}
+    raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
 @app.get("/descargar_word")
 def descargar_word():
     ruta = "Guia_Organizacion_Almacen_Nissan.docx"
+    if not os.path.exists(ruta):
+        try:
+            from generar_word import crear_documento_word
+            crear_documento_word(ruta)
+        except Exception as e:
+            print("Aviso generando word en demanda:", e)
+
     if os.path.exists(ruta):
         return FileResponse(
             ruta,
             filename="Guia_Organizacion_Almacen_Nissan.docx",
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": 'attachment; filename="Guia_Organizacion_Almacen_Nissan.docx"'}
         )
-    return {"error": "Archivo Word no encontrado"}
+    raise HTTPException(status_code=404, detail="Archivo Word no encontrado")
 
 @app.post("/agregar_herramienta")
 def agregar_herramienta(
