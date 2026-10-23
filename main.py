@@ -169,6 +169,25 @@ def descargar_word():
         )
     raise HTTPException(status_code=404, detail="Archivo Word no encontrado")
 
+@app.get("/descargar_pdf_qr")
+def descargar_pdf_qr():
+    ruta = "Catalogo_Mural_QR_Nissan.pdf"
+    if not os.path.exists(ruta):
+        try:
+            from generar_pdf_qr import generar_pdf_completo
+            generar_pdf_completo(ruta)
+        except Exception as e:
+            print("Aviso generando PDF QR en demanda:", e)
+
+    if os.path.exists(ruta):
+        return FileResponse(
+            ruta,
+            filename="Catalogo_Mural_QR_Nissan.pdf",
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'attachment; filename="Catalogo_Mural_QR_Nissan.pdf"'}
+        )
+    raise HTTPException(status_code=404, detail="Archivo PDF no encontrado")
+
 @app.post("/agregar_herramienta")
 def agregar_herramienta(
     clave: str = Form(...),
@@ -241,7 +260,20 @@ def devolver_herramienta(datos: DevolverRequest, db: Session = Depends(get_db)):
 
 @app.get("/historial")
 def ver_historial(db: Session = Depends(get_db)):
-    return db.query(database.Prestamo).order_by(database.Prestamo.id.desc()).all()
+    prestamos = db.query(database.Prestamo).order_by(database.Prestamo.id.desc()).all()
+    resultado = []
+    for p in prestamos:
+        # Enviar formato ISO terminado en 'Z' (UTC) para que el navegador del usuario lo muestre en su hora local exacta
+        f_salida = (p.fecha_salida.isoformat() + "Z") if p.fecha_salida else None
+        f_devolucion = (p.fecha_devolucion.isoformat() + "Z") if p.fecha_devolucion else None
+        resultado.append({
+            "id": p.id,
+            "herramienta_clave": p.herramienta_clave,
+            "tecnico_nombre": p.tecnico_nombre,
+            "fecha_salida": f_salida,
+            "fecha_devolucion": f_devolucion
+        })
+    return resultado
 
 @app.get("/estadisticas")
 def estadisticas(db: Session = Depends(get_db)):
