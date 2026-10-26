@@ -736,6 +736,7 @@
         let racks = {};
         let pinMarcador = null;
         let pinBaseY = 0;
+        let estucheHerramienta = null;
         let motorIniciado = false;
         let posDestinoGlobal = null;
         let html5QrScanner = null;
@@ -943,13 +944,18 @@
             const paso = largo / (numCajas + 1);
 
             for (let i = 1; i <= numCajas; i++) {
+                const posXLocal = -largo / 2 + i * paso;
+                // Dejar siempre completamente despejada la zona central (-1.5) donde se señala la herramienta
+                if (Math.abs(posXLocal - (-1.5)) < 1.3) continue;
+
                 if (Math.random() > 0.8) continue;
                 const color = coloresCajas[Math.floor(Math.random() * coloresCajas.length)];
                 const caja = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.7 + Math.random() * 0.4, 0.4 + Math.random() * 0.3, prof * 0.65),
+                    new THREE.BoxGeometry(0.7 + Math.random() * 0.4, 0.4 + Math.random() * 0.3, prof * 0.5),
                     new THREE.MeshStandardMaterial({ color: color, roughness: 0.6 })
                 );
-                caja.position.set(-largo / 2 + i * paso, y, (Math.random() - 0.5) * 0.3);
+                // Ubicadas ligeramente al fondo del estante para dejar el frente despejado
+                caja.position.set(posXLocal, y, -0.2 + (Math.random() - 0.5) * 0.2);
                 caja.castShadow = true;
                 rack.add(caja);
             }
@@ -976,36 +982,41 @@
         function crearMarcadorPin() {
             const pinGroup = new THREE.Group();
 
-            // 1. Cono invertido estilizado y compacto (altura 0.35, radio 0.12 - mucho más pequeño)
-            const geoCono = new THREE.ConeGeometry(0.12, 0.35, 20);
-            geoCono.rotateX(Math.PI); // Punta apuntando directamente abajo
-            const matCono = new THREE.MeshStandardMaterial({
-                color: 0xff0033,
-                emissive: 0xff0022,
-                emissiveIntensity: 0.9,
+            // 1. Cabezal de la flecha: Cono afilado y elegante apuntando hacia abajo
+            const geoHead = new THREE.ConeGeometry(0.18, 0.32, 24);
+            geoHead.rotateX(Math.PI); // Punta hacia abajo
+            const matFlecha = new THREE.MeshStandardMaterial({
+                color: 0xff0033,           // Rojo Nissan brillante
+                emissive: 0xff0022,        // Brillo neón visible
+                emissiveIntensity: 0.85,
                 roughness: 0.2,
                 metalness: 0.3
             });
-            const cono = new THREE.Mesh(geoCono, matCono);
-            // La punta del cono queda en y = 0.0
-            cono.position.y = 0.175;
-            pinGroup.add(cono);
+            const head = new THREE.Mesh(geoHead, matFlecha);
+            head.position.y = 0.16; // La punta queda exactamente en y = 0.0
+            pinGroup.add(head);
 
-            // 2. Esfera superior luminosa y discreta
-            const esfera = new THREE.Mesh(
-                new THREE.SphereGeometry(0.08, 16, 16),
-                new THREE.MeshStandardMaterial({
-                    color: 0xffffff,
-                    emissive: 0xffffff,
-                    emissiveIntensity: 0.9,
-                    roughness: 0.1
-                })
-            );
-            esfera.position.y = 0.38;
-            pinGroup.add(esfera);
+            // 2. Vástago / Cuerpo cilíndrico de la flecha
+            const geoShaft = new THREE.CylinderGeometry(0.07, 0.07, 0.28, 24);
+            const shaft = new THREE.Mesh(geoShaft, matFlecha);
+            shaft.position.y = 0.32 + 0.14; // De y = 0.32 a y = 0.60
+            pinGroup.add(shaft);
 
-            // 3. Diana / Anillo concentrico en la base para marcar el punto exacto de la balda
-            const geoAnillo = new THREE.RingGeometry(0.08, 0.22, 24);
+            // 3. Remate superior metálico cromado
+            const geoCap = new THREE.CylinderGeometry(0.10, 0.10, 0.04, 24);
+            const matCap = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0xffffff,
+                emissiveIntensity: 0.7,
+                metalness: 0.8,
+                roughness: 0.1
+            });
+            const cap = new THREE.Mesh(geoCap, matCap);
+            cap.position.y = 0.62;
+            pinGroup.add(cap);
+
+            // 4. Diana / Anillo concéntrico en la base que marca el lugar exacto en el estante
+            const geoAnillo = new THREE.RingGeometry(0.12, 0.28, 32);
             const matAnillo = new THREE.MeshBasicMaterial({
                 color: 0xff0033,
                 side: THREE.DoubleSide,
@@ -1014,8 +1025,19 @@
             });
             const anillo = new THREE.Mesh(geoAnillo, matAnillo);
             anillo.rotation.x = -Math.PI / 2;
-            anillo.position.y = -0.10;
+            anillo.position.y = -0.15; // En la superficie de la balda
             pinGroup.add(anillo);
+
+            // 5. Pequeño punto focal central en la diana
+            const geoPunto = new THREE.CircleGeometry(0.05, 16);
+            const matPunto = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                side: THREE.DoubleSide
+            });
+            const punto = new THREE.Mesh(geoPunto, matPunto);
+            punto.rotation.x = -Math.PI / 2;
+            punto.position.y = -0.149;
+            pinGroup.add(punto);
 
             pinGroup.visible = false;
             scene.add(pinGroup);
@@ -1064,9 +1086,42 @@
                     posY = baldaObjetivo.userData.yMundial || 2.5;
                 }
 
-                // Posicionamiento preciso dentro del nivel libre (nunca choca con el nivel de arriba)
-                pinBaseY = posY + 0.55;
-                pinMarcador.position.set(posX - 1.5, pinBaseY, posZ);
+                // Estuche 3D oficial de la herramienta seleccionada (posicionado en el estante despejado)
+                if (!estucheHerramienta) {
+                    const grupoEstuche = new THREE.Group();
+                    const geoBase = new THREE.BoxGeometry(0.85, 0.16, 0.55);
+                    const matEstuche = new THREE.MeshStandardMaterial({
+                        color: 0x0f172a,
+                        roughness: 0.3,
+                        metalness: 0.6
+                    });
+                    const baseEstuche = new THREE.Mesh(geoBase, matEstuche);
+                    baseEstuche.position.y = 0.08;
+                    baseEstuche.castShadow = true;
+                    grupoEstuche.add(baseEstuche);
+
+                    const geoPlaca = new THREE.BoxGeometry(0.55, 0.02, 0.30);
+                    const matPlaca = new THREE.MeshStandardMaterial({
+                        color: 0xff0033,
+                        emissive: 0xaa0022,
+                        emissiveIntensity: 0.5,
+                        roughness: 0.3
+                    });
+                    const placa = new THREE.Mesh(geoPlaca, matPlaca);
+                    placa.position.y = 0.17;
+                    grupoEstuche.add(placa);
+
+                    scene.add(grupoEstuche);
+                    estucheHerramienta = grupoEstuche;
+                }
+                estucheHerramienta.position.set(posX - 1.5, posY, posZ + 0.25);
+                estucheHerramienta.visible = true;
+
+                // Flecha indicadora: Flota sobre el estuche en la zona frontal completamente despejada
+                // Altura calculada con precisión: la punta queda en posY + 0.30 m
+                // El remate superior llega a posY + 0.92 m, dejando más de 65 cm libres debajo del nivel superior
+                pinBaseY = posY + 0.30;
+                pinMarcador.position.set(posX - 1.5, pinBaseY, posZ + 0.25);
                 pinMarcador.visible = true;
 
                 posDestinoGlobal = {
@@ -1154,6 +1209,7 @@
         function cerrarMapa() {
             document.getElementById('modal-ubicacion').classList.add('hidden');
             if (pinMarcador) pinMarcador.visible = false;
+            if (estucheHerramienta) estucheHerramienta.visible = false;
         }
 
         // ==========================================
