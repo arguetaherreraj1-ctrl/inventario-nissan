@@ -153,12 +153,11 @@ def descargar_excel():
 @app.get("/descargar_word")
 def descargar_word():
     ruta = "Guia_Organizacion_Almacen_Nissan.docx"
-    if not os.path.exists(ruta):
-        try:
-            from generar_word import crear_documento_word
-            crear_documento_word(ruta)
-        except Exception as e:
-            print("Aviso generando word en demanda:", e)
+    try:
+        from generar_word import crear_documento_word
+        crear_documento_word(ruta)
+    except Exception as e:
+        print("Aviso generando word en demanda:", e)
 
     if os.path.exists(ruta):
         return FileResponse(

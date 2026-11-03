@@ -257,9 +257,9 @@
                     <button onclick="descargarExcelCatalogo()" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar Catálogo de 57 Piezas en Excel (.xlsx)">
                         <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel (.xlsx)
                     </button>
-                    <button onclick="descargarGuiaWord()" class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar Guía de Organización por Almacén y Estantes en Word (.docx)">
+                    <a href="/descargar_word" download="Guia_Organizacion_Almacen_Nissan.docx" class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar Guía de Organización por Almacén y Estantes en Word (.docx)">
                         <i class="fa-solid fa-file-word text-blue-600"></i> Guía Word
-                    </button>
+                    </a>
                     <button onclick="sincronizarCatalogoCompleto()" class="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 px-2.5 py-1.5 rounded-lg font-semibold transition" title="Sincronizar/Restablecer catálogo oficial de 57 piezas">
                         <i class="fa-solid fa-rotate text-slate-400"></i> Cargar 57
                     </button>
@@ -1546,78 +1546,8 @@
             XLSX.writeFile(wb, "Inventario_Herramientas_Nissan_Organizado.xlsx");
         }
 
-        async function descargarGuiaWord() {
-            try {
-                const res = await fetch('/descargar_word');
-                const contentType = res.headers.get("content-type") || "";
-                
-                if (contentType.includes("application/json")) {
-                    const data = await res.json();
-                    console.warn("Servidor respondió json, usando generador local...");
-                    generarWordDirectoNavegador();
-                    return;
-                }
-                
-                if (!res.ok) {
-                    throw new Error("Servidor no respondió archivo Word");
-                }
-
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "Guia_Organizacion_Almacen_Nissan.docx";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } catch (err) {
-                console.warn("Descargando respaldo directo de Word...");
-                generarWordDirectoNavegador();
-            }
-        }
-
-        function generarWordDirectoNavegador() {
-            let contenidoHtml = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head><meta charset='utf-8'><title>Guía Organización Almacén Nissan</title>
-            <style>
-                body { font-family: Arial, sans-serif; }
-                table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-                th, td { border: 1px solid #ddd; padding: 6px 10px; font-size: 11px; }
-                th { background-color: #C3002F; color: white; }
-                h1 { color: #C3002F; text-align: center; }
-            </style>
-            </head>
-            <body>
-            <h1>NISSAN TALLER Y REFACCIONES</h1>
-            <p style='text-align:center; font-weight:bold;'>GUÍA DE ORGANIZACIÓN DE 57 HERRAMIENTAS EN ALMACÉN</p>
-            <table>
-                <tr>
-                    <th>#</th><th>Ubicación</th><th>Clave</th><th>Descripción</th><th>Total</th>
-                </tr>`;
-
-            herramientasData.forEach((h, idx) => {
-                contenidoHtml += `<tr>
-                    <td style='text-align:center;'>${idx + 1}</td>
-                    <td style='text-align:center; font-weight:bold; color:#C3002F;'>${h.ubicacion}</td>
-                    <td style='font-family:monospace; font-weight:bold;'>${h.clave}</td>
-                    <td>${h.descripcion}</td>
-                    <td style='text-align:center;'>${h.cantidad_total}</td>
-                </tr>`;
-            });
-
-            contenidoHtml += `</table></body></html>`;
-
-            const blob = new Blob(['\ufeff', contenidoHtml], { type: 'application/msword' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = "Guia_Organizacion_Almacen_Nissan.doc";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        function descargarGuiaWord() {
+            window.location.href = '/descargar_word';
         }
 
         // =======================================================
