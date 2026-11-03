@@ -249,19 +249,10 @@
                     </button>
                 </div>
 
-                <!-- Grupo Descargas y Sincronización -->
-                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
-                        <i class="fa-solid fa-folder-open text-slate-400"></i> Exportar:
-                    </span>
-                    <button onclick="descargarExcelCatalogo()" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar Catálogo de 57 Piezas en Excel (.xlsx)">
-                        <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel (.xlsx)
-                    </button>
-                    <a href="/descargar_word" download="Guia_Organizacion_Almacen_Nissan.docx" class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar Guía de Organización por Almacén y Estantes en Word (.docx)">
-                        <i class="fa-solid fa-file-word text-blue-600"></i> Guía Word
-                    </a>
-                    <button onclick="sincronizarCatalogoCompleto()" class="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 px-2.5 py-1.5 rounded-lg font-semibold transition" title="Sincronizar/Restablecer catálogo oficial de 57 piezas">
-                        <i class="fa-solid fa-rotate text-slate-400"></i> Cargar 57
+                <!-- Sincronización de Catálogo Oficial -->
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <button onclick="sincronizarCatalogoCompleto()" class="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 px-3 py-1.5 rounded-lg font-semibold transition shadow-xs" title="Sincronizar o recargar las 57 piezas oficiales">
+                        <i class="fa-solid fa-rotate text-slate-400"></i> Cargar 57 Piezas
                     </button>
                 </div>
             </div>
@@ -503,7 +494,7 @@
                 </div>
                 <div class="flex justify-between items-center pb-1.5 border-b border-slate-200">
                     <span class="text-slate-400 font-bold uppercase text-[10px]">Registro Bitácora:</span>
-                    <span class="font-bold text-emerald-700 text-[11px]"><i class="fa-solid fa-file-excel text-emerald-600 mr-1"></i> Guardado en Excel</span>
+                    <span class="font-bold text-emerald-700 text-[11px]"><i class="fa-solid fa-clock-rotate-left text-emerald-600 mr-1"></i> Registrado en Bitácora</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-slate-400 font-bold uppercase text-[10px]">Disponibilidad:</span>
@@ -1427,11 +1418,11 @@
                     body: JSON.stringify({ herramienta_clave: clave, tecnico_nombre: nombre })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    cargarCatalogo();
-                    cargarHistorial();
+                if (res.ok && !data.error) {
+                    await cargarCatalogo();
+                    await cargarHistorial();
                 } else {
-                    alert(data.error || "No se pudo realizar el préstamo.");
+                    alert(data.error || data.detail || "No se pudo realizar el préstamo.");
                 }
             } catch (e) { console.error(e); }
         }
@@ -1444,11 +1435,11 @@
                     body: JSON.stringify({ herramienta_clave: clave })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    cargarCatalogo();
-                    cargarHistorial();
+                if (res.ok && !data.error) {
+                    await cargarCatalogo();
+                    await cargarHistorial();
                 } else {
-                    alert(data.error || "No se pudo devolver.");
+                    alert(data.error || data.detail || "No se pudo devolver.");
                 }
             } catch (e) { console.error(e); }
         }
@@ -1872,7 +1863,7 @@
                         body: JSON.stringify({ herramienta_clave: pieza.clave, tecnico_nombre: tecnicoNombre })
                     });
                     const data = await res.json();
-                    if (res.ok) {
+                    if (res.ok && !data.error) {
                         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                         
                         await cargarCatalogo();
@@ -1889,7 +1880,7 @@
                         botonesDev.classList.add('hidden');
                         document.getElementById('modal-accion-qr').classList.remove('hidden');
                     } else {
-                        alert(data.error || "No se pudo registrar la pieza.");
+                        alert(data.error || data.detail || "No se pudo registrar la pieza.");
                     }
                 } catch (e) {
                     console.error(e);

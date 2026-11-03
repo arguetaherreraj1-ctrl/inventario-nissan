@@ -225,9 +225,9 @@ def agregar_herramienta(
 def prestar_herramienta(datos: PrestamoRequest, db: Session = Depends(get_db)):
     herr = db.query(database.Herramienta).filter(database.Herramienta.clave == datos.herramienta_clave).first()
     if not herr:
-        return {"error": "Herramienta no encontrada."}
+        raise HTTPException(status_code=404, detail="Herramienta no encontrada.")
     if herr.cantidad_disponible <= 0:
-        return {"error": "No hay unidades disponibles de esta herramienta."}
+        raise HTTPException(status_code=400, detail="No hay unidades disponibles de esta herramienta.")
 
     herr.cantidad_disponible -= 1
     nuevo_prestamo = database.Prestamo(
@@ -241,8 +241,10 @@ def prestar_herramienta(datos: PrestamoRequest, db: Session = Depends(get_db)):
 @app.post("/devolver")
 def devolver_herramienta(datos: DevolverRequest, db: Session = Depends(get_db)):
     herr = db.query(database.Herramienta).filter(database.Herramienta.clave == datos.herramienta_clave).first()
-    if not herr or herr.cantidad_disponible >= herr.cantidad_total:
-        return {"error": "Esta herramienta ya está registrada como devuelta o no existe."}
+    if not herr:
+        raise HTTPException(status_code=404, detail="Herramienta no encontrada.")
+    if herr.cantidad_disponible >= herr.cantidad_total:
+        raise HTTPException(status_code=400, detail="Esta herramienta ya está registrada como devuelta o no existe.")
     
     herr.cantidad_disponible += 1
     
