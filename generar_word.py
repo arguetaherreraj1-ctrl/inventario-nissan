@@ -10,6 +10,7 @@ from docx.oxml.ns import nsdecls
 from generar_excel import herramientas_organizadas
 
 def set_cell_background(cell, hex_color):
+    """Aplica sombreado de fondo a una celda de forma 100% segura para Word."""
     tcPr = cell._tc.get_or_add_tcPr()
     for child in list(tcPr):
         if child.tag.endswith('shd'):
@@ -17,36 +18,10 @@ def set_cell_background(cell, hex_color):
     shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{hex_color}"/>')
     tcPr.append(shd)
 
-def set_table_styling(table):
-    tblPr = table._tbl.tblPr
-    # Margenes de celda estandar en el orden estricto de OpenXML: top, left, bottom, right
-    tblCellMar = parse_xml(
-        f'<w:tblCellMar {nsdecls("w")}>'
-        f'<w:top w:w="120" w:type="dxa"/>'
-        f'<w:left w:w="160" w:type="dxa"/>'
-        f'<w:bottom w:w="120" w:type="dxa"/>'
-        f'<w:right w:w="160" w:type="dxa"/>'
-        f'</w:tblCellMar>'
-    )
-    tblPr.append(tblCellMar)
-    
-    # Bordes limpios y discretos
-    tblBorders = parse_xml(
-        f'<w:tblBorders {nsdecls("w")}>'
-        f'<w:top w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
-        f'<w:left w:val="none"/>'
-        f'<w:bottom w:val="single" w:sz="6" w:space="0" w:color="94A3B8"/>'
-        f'<w:right w:val="none"/>'
-        f'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/>'
-        f'<w:insideV w:val="none"/>'
-        f'</w:tblBorders>'
-    )
-    tblPr.append(tblBorders)
-
 def crear_documento_word(ruta_destino):
     doc = Document()
 
-    # Configurar márgenes estrechos
+    # Configurar márgenes del documento
     for section in doc.sections:
         section.top_margin = Inches(0.7)
         section.bottom_margin = Inches(0.7)
@@ -65,6 +40,9 @@ def crear_documento_word(ruta_destino):
     # ----------------------------------------------------
     p_header = doc.add_paragraph()
     p_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_header.paragraph_format.space_before = Pt(0)
+    p_header.paragraph_format.space_after = Pt(2)
+    
     r_nissan = p_header.add_run("NISSAN TALLER Y REFACCIONES\n")
     r_nissan.font.name = "Arial"
     r_nissan.font.size = Pt(20)
@@ -85,9 +63,11 @@ def crear_documento_word(ruta_destino):
     doc.add_paragraph() # Espacio
 
     # ----------------------------------------------------
-    # INTRODUCCIÓN Y REGLAS DE ORGANIZACIÓN
+    # 1. PRINCIPIOS DE DISTRIBUCIÓN ERGONÓMICA
     # ----------------------------------------------------
     p_intro_titulo = doc.add_paragraph()
+    p_intro_titulo.paragraph_format.space_before = Pt(6)
+    p_intro_titulo.paragraph_format.space_after = Pt(2)
     r_it = p_intro_titulo.add_run("1. PRINCIPIOS DE DISTRIBUCIÓN ERGONÓMICA")
     r_it.font.name = "Arial"
     r_it.font.size = Pt(12)
@@ -103,10 +83,10 @@ def crear_documento_word(ruta_destino):
     p_intro.style.font.name = "Arial"
     p_intro.style.font.size = Pt(10)
 
-    # Tabla resumen de alturas
+    # Tabla resumen de alturas (Usando estilo nativo 'Table Grid' 100% compatible con Word)
     tabla_alturas = doc.add_table(rows=4, cols=3)
+    tabla_alturas.style = 'Table Grid'
     tabla_alturas.alignment = WD_TABLE_ALIGNMENT.CENTER
-    set_table_styling(tabla_alturas)
 
     encabezados_alt = ["Nivel de Altura", "Tipo de Herramienta a Colocar", "Criterio de Seguridad"]
     for i, h in enumerate(encabezados_alt):
@@ -148,10 +128,10 @@ def crear_documento_word(ruta_destino):
     # SECCIONES POR ESTANTE
     # ----------------------------------------------------
     estantes_def = [
-        ("ESTANTE A: DIAGNÓSTICO, ELECTRICIDAD Y SEGURIDAD EPP (19 PIEZAS)", "A", "C3002F", COLOR_ROJO, "[A]"),
-        ("ESTANTE B: MOTOR, COMBUSTIBLE, ENFRIAMIENTO Y A/C (19 PIEZAS)", "B", "1E3A8A", COLOR_AZUL, "[B]"),
-        ("ESTANTE C: TRANSMISIÓN (CVT), FRENOS Y MECÁNICA DE PRECISIÓN (18 PIEZAS)", "C", "166534", COLOR_VERDE, "[C]"),
-        ("ZONA D: ÁREA DE MANIOBRAS PESADAS EN PISO (1 PIEZA)", "D", "854D0E", COLOR_AMARILLO, "[D]")
+        ("ESTANTE A: DIAGNÓSTICO, ELECTRICIDAD Y SEGURIDAD EPP (19 PIEZAS)", "A", "C3002F", COLOR_ROJO, "[ESTANTE A]"),
+        ("ESTANTE B: MOTOR, COMBUSTIBLE, ENFRIAMIENTO Y A/C (19 PIEZAS)", "B", "1E3A8A", COLOR_AZUL, "[ESTANTE B]"),
+        ("ESTANTE C: TRANSMISIÓN (CVT), FRENOS Y MECÁNICA DE PRECISIÓN (18 PIEZAS)", "C", "166534", COLOR_VERDE, "[ESTANTE C]"),
+        ("ZONA D: ÁREA DE MANIOBRAS PESADAS EN PISO (1 PIEZA)", "D", "854D0E", COLOR_AMARILLO, "[ZONA D]")
     ]
 
     for titulo_estante, prefijo, hex_color, rgb_color, icono in estantes_def:
@@ -161,17 +141,23 @@ def crear_documento_word(ruta_destino):
         p_sec.paragraph_format.space_after = Pt(4)
         r_sec = p_sec.add_run(f"{icono} {titulo_estante}")
         r_sec.font.name = "Arial"
-        r_sec.font.size = Pt(12)
+        r_sec.font.size = Pt(11.5)
         r_sec.font.bold = True
         r_sec.font.color.rgb = rgb_color
 
         # Filtrar herramientas de este estante
         piezas_estante = [h for h in herramientas_organizadas if h["ubicacion"].startswith(prefijo)]
 
-        # Crear tabla
+        # Crear tabla con estilo 'Table Grid' 100% nativo de Word
         tabla = doc.add_table(rows=len(piezas_estante) + 1, cols=5)
+        tabla.style = 'Table Grid'
         tabla.alignment = WD_TABLE_ALIGNMENT.CENTER
-        set_table_styling(tabla)
+
+        # Anchos de columna proporcionales
+        anchos = [Inches(0.85), Inches(1.3), Inches(2.2), Inches(2.65), Inches(0.6)]
+        for row in tabla.rows:
+            for i, w in enumerate(anchos):
+                row.cells[i].width = w
 
         # Encabezado
         encabezados = ["Ubicación", "Clave Nissan", "Nombre de la Herramienta", "Descripción y Función en el Auto", "Cant."]
