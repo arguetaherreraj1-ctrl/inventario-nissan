@@ -239,10 +239,13 @@
                 <!-- Grupo Impresión y Códigos QR -->
                 <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
-                        <i class="fa-solid fa-qrcode text-slate-400"></i> Mural QR:
+                        <i class="fa-solid fa-qrcode text-slate-400"></i> Documentos y QR:
                     </span>
-                    <a href="/descargar_pdf_qr" download="Catalogo_Mural_QR_Nissan.pdf" class="inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar PDF de 4 páginas listo para imprimir">
-                        <i class="fa-solid fa-file-pdf text-red-600"></i> Descargar PDF Listo
+                    <a href="/descargar_pdf_qr" download="Catalogo_Mural_QR_Nissan.pdf" class="inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar PDF de mural listo para imprimir">
+                        <i class="fa-solid fa-file-pdf text-red-600"></i> PDF Mural QR
+                    </a>
+                    <a href="/descargar_manual_word" download="Manual_de_Usuario_Sistema_Inventario_Nissan.docx" class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg font-bold transition shadow-xs" title="Descargar Manual de Usuario Oficial en Word">
+                        <i class="fa-solid fa-file-word text-blue-600"></i> Manual Word (.docx)
                     </a>
                     <button onclick="abrirHojasMurales()" class="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg font-semibold transition" title="Ver mural en pantalla">
                         <i class="fa-solid fa-table-cells text-slate-500"></i> Vista Mural
@@ -251,8 +254,8 @@
 
                 <!-- Sincronización de Catálogo Oficial -->
                 <div class="flex items-center gap-1.5 sm:gap-2">
-                    <button onclick="sincronizarCatalogoCompleto()" class="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 px-3 py-1.5 rounded-lg font-semibold transition shadow-xs" title="Sincronizar o recargar las 57 piezas oficiales">
-                        <i class="fa-solid fa-rotate text-slate-400"></i> Cargar 57 Piezas
+                    <button onclick="sincronizarCatalogoCompleto()" class="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 px-3 py-1.5 rounded-lg font-semibold transition shadow-xs" title="Sincronizar o recargar las 94 piezas oficiales">
+                        <i class="fa-solid fa-rotate text-slate-400"></i> Cargar 94 Piezas
                     </button>
                 </div>
             </div>
@@ -734,7 +737,7 @@
         let herramientaActivaQR = null;
 
         // ==========================================
-        // 1. CONSTRUCCIÓN DETALLADA DEL ALMACÉN 3D
+        // 1. CONSTRUCCIÓN FOTORREALISTA DEL ALMACÉN 3D (BASADO EN FOTOS REALES)
         // ==========================================
         function iniciarMotor3D() {
             if (motorIniciado) return;
@@ -744,11 +747,11 @@
             const alto = contenedor.clientHeight;
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0f172a);
-            scene.fog = new THREE.FogExp2(0x0f172a, 0.018);
+            scene.background = new THREE.Color(0x1e293b);
+            scene.fog = new THREE.FogExp2(0x1e293b, 0.015);
 
-            camera = new THREE.PerspectiveCamera(55, ancho / alto, 0.1, 150);
-            camera.position.set(-11, 7, -11);
+            camera = new THREE.PerspectiveCamera(50, ancho / alto, 0.1, 150);
+            camera.position.set(-11, 6.5, -9.5);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(ancho, alto);
@@ -757,35 +760,52 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             contenedor.appendChild(renderer.domElement);
 
-            // OrbitControls configurado para touch en smartphones
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 2 - 0.05;
-            controls.minDistance = 2;
-            controls.maxDistance = 45;
+            controls.maxPolarAngle = Math.PI / 2 - 0.03;
+            controls.minDistance = 1.5;
+            controls.maxDistance = 40;
 
-            // Iluminación
-            const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.7);
+            // Iluminación ambiental y dirigida tipo taller automotriz
+            const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.82);
             scene.add(luzAmbiente);
 
-            const luzTecho1 = new THREE.DirectionalLight(0xffffff, 0.8);
-            luzTecho1.position.set(-4, 14, 0);
-            luzTecho1.castShadow = true;
-            scene.add(luzTecho1);
+            const luzTecho = new THREE.DirectionalLight(0xfffdf5, 0.75);
+            luzTecho.position.set(-2, 14, 2);
+            luzTecho.castShadow = true;
+            luzTecho.shadow.mapSize.width = 1024;
+            luzTecho.shadow.mapSize.height = 1024;
+            scene.add(luzTecho);
 
-            const luzTecho2 = new THREE.DirectionalLight(0xfff5ea, 0.5);
-            luzTecho2.position.set(6, 14, -3);
-            scene.add(luzTecho2);
+            const luzRelleno = new THREE.DirectionalLight(0xe0f2fe, 0.45);
+            luzRelleno.position.set(8, 10, -5);
+            scene.add(luzRelleno);
 
-            // Piso y Paredes
-            crearPisoIndustrial(26, 20);
-            crearParedesYEntrada(26, 20, 6.5);
+            // 1. Piso cerámico con juntas de loseta y franjas de seguridad
+            crearPisoTallerRealista(24, 18);
 
-            // Racks industriales
-            racks['A'] = construirRackMecalux('A', 'RACK A (DIAGNÓSTICO)', 13, 5.2, 2.4, 3, 3.5, -6.2);
-            racks['B'] = construirRackMecalux('B', 'RACK B (HERRAMIENTA ESPECIAL)', 13, 5.2, 2.4, 3, 3.5, 0.0);
-            racks['C'] = construirRackMecalux('C', 'RACK C (EXTRACTORES Y TORQUES)', 7, 5.2, 2.4, 3, 6.5, 6.5);
+            // 2. Muros bicolor, puerta y plafón de techo
+            crearArquitecturaTallerRealista(24, 18, 4.8);
+
+            // 3. Malla ciclónica galvanizada perimetral con letrero "HERRAMIENTAS GENERALES"
+            crearMallaCiclonica(18);
+
+            // 4. Extintor contra incendios en muro
+            crearExtintorMural(8.2, 1.6, 6.6);
+
+            // 5. Estantes industriales de ángulo ranurado gris (5 niveles como en las fotos)
+            // Estante A (1.9m ancho x 2.1m alto x 0.65m prof) en X=1.5, Z=-5.2
+            racks['A'] = construirEstanteRanuradoRealista('A', 'ESTANTE A (DIAGNÓSTICO Y EPP)', 2.0, 2.15, 0.68, 5, 1.8, -4.8);
+            
+            // Estante B (1.9m ancho x 2.1m alto x 0.65m prof) en X=1.8, Z=0.2
+            racks['B'] = construirEstanteRanuradoRealista('B', 'ESTANTE B (MOTOR Y PAQUETE STP)', 2.0, 2.15, 0.68, 5, 1.8, 0.4);
+            
+            // Estante C (1.8m ancho x 2.1m alto x 0.65m prof) en X=5.6, Z=5.6
+            racks['C'] = construirEstanteRanuradoRealista('C', 'ESTANTE C (CVT Y MEDICIÓN)', 1.9, 2.15, 0.68, 5, 5.8, 5.4);
+
+            // 6. Equipamiento de taller en piso: Grúa pluma de 2 Toneladas (D1), carro de A/C y gato hidráulico
+            crearEquiposTallerPiso();
 
             crearMarcadorPin();
 
@@ -806,122 +826,319 @@
             document.getElementById('loading-3d').classList.add('hidden');
         }
 
-        function crearPisoIndustrial(ancho, prof) {
+        function crearPisoTallerRealista(ancho, prof) {
+            // Textura procedural de loseta cerámica de taller
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#e2e8f0'; // Loseta gris perla
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Juntas de loseta
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 4;
+            const paso = 64;
+            for (let x = 0; x <= 512; x += paso) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+            }
+            for (let y = 0; y <= 512; y += paso) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+            }
+
+            const texPiso = new THREE.CanvasTexture(canvas);
+            texPiso.wrapS = THREE.RepeatWrapping;
+            texPiso.wrapT = THREE.RepeatWrapping;
+            texPiso.repeat.set(12, 9);
+
             const geo = new THREE.PlaneGeometry(ancho, prof);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.15 });
+            const mat = new THREE.MeshStandardMaterial({ 
+                map: texPiso, 
+                roughness: 0.38, 
+                metalness: 0.08 
+            });
             const piso = new THREE.Mesh(geo, mat);
             piso.rotation.x = -Math.PI / 2;
             piso.receiveShadow = true;
             scene.add(piso);
 
-            const matLinea = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-            const lineaGeo = new THREE.PlaneGeometry(0.15, prof - 2);
-            const linea1 = new THREE.Mesh(lineaGeo, matLinea);
-            linea1.rotation.x = -Math.PI / 2;
-            linea1.position.set(-4.5, 0.01, 0);
-            scene.add(linea1);
+            // Líneas de tránsito peatonal amarillas
+            const matAmarillo = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+            const lineaGuia = new THREE.Mesh(new THREE.PlaneGeometry(0.12, prof - 2), matAmarillo);
+            lineaGuia.rotation.x = -Math.PI / 2;
+            lineaGuia.position.set(-3.8, 0.015, 0);
+            scene.add(lineaGuia);
 
-            const pasoGeo = new THREE.PlaneGeometry(2.5, 0.25);
-            for (let z = -8; z <= 8; z += 1.5) {
-                const paso = new THREE.Mesh(pasoGeo, matLinea);
-                paso.rotation.x = -Math.PI / 2;
-                paso.position.set(-7.5, 0.01, z);
-                scene.add(paso);
-            }
+            // Delimitación de área de seguridad para Zona D (Grúa)
+            const matZonaD = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide });
+            const rectZonaD = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), matZonaD);
+            rectZonaD.rotation.x = -Math.PI / 2;
+            rectZonaD.position.set(-0.8, 0.012, 5.2);
+            scene.add(rectZonaD);
+
+            const texD1 = crearTexturaLetrero("ZONA D: GRÚA 2 TON", "#d97706", "#FFFFFF");
+            const placaD1 = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.4), new THREE.MeshBasicMaterial({ map: texD1 }));
+            placaD1.rotation.x = -Math.PI / 2;
+            placaD1.position.set(-0.8, 0.016, 5.2);
+            scene.add(placaD1);
         }
 
-        function crearParedesYEntrada(ancho, prof, alto) {
-            const matPared = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+        function crearArquitecturaTallerRealista(ancho, prof, alto) {
             const grupoParedes = new THREE.Group();
 
-            const pNorte = new THREE.Mesh(new THREE.BoxGeometry(ancho, alto, 0.4), matPared);
-            pNorte.position.set(0, alto / 2, -prof / 2);
-            grupoParedes.add(pNorte);
+            // Muros bicolor auténticos: Zoclo gris carbón abajo, blanco limpio arriba
+            const matGrisBajo = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+            const matBlancoAlto = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.85 });
+            const matMolding = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
 
-            const pSur = new THREE.Mesh(new THREE.BoxGeometry(ancho, alto, 0.4), matPared);
-            pSur.position.set(0, alto / 2, prof / 2);
-            grupoParedes.add(pSur);
+            const altoZoclo = 1.45;
+            const altoAlto = alto - altoZoclo;
 
-            const pEste = new THREE.Mesh(new THREE.BoxGeometry(0.4, alto, prof), matPared);
-            pEste.position.set(ancho / 2, alto / 2, 0);
-            grupoParedes.add(pEste);
+            // Función constructora de muro seccionado
+            function agregarMuroBicolor(w, pX, pZ, rotY) {
+                const subGrupo = new THREE.Group();
+                // Parte inferior gris
+                const base = new THREE.Mesh(new THREE.BoxGeometry(w, altoZoclo, 0.25), matGrisBajo);
+                base.position.y = altoZoclo / 2;
+                subGrupo.add(base);
 
-            const pOeste = new THREE.Mesh(new THREE.BoxGeometry(0.4, alto, prof), matPared);
-            pOeste.position.set(-ancho / 2, alto / 2, 0);
-            grupoParedes.add(pOeste);
+                // Moldura blanca divisoria
+                const mold = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, 0.28), matMolding);
+                mold.position.y = altoZoclo;
+                subGrupo.add(mold);
 
-            const matPuerta = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
-            const puerta = new THREE.Mesh(new THREE.BoxGeometry(3.5, 4.2, 0.5), matPuerta);
-            puerta.position.set(-7.5, 2.1, -prof / 2 + 0.1);
-            grupoParedes.add(puerta);
+                // Parte superior blanca
+                const alta = new THREE.Mesh(new THREE.BoxGeometry(w, altoAlto, 0.25), matBlancoAlto);
+                alta.position.y = altoZoclo + altoAlto / 2;
+                subGrupo.add(alta);
 
-            const texPuerta = crearTexturaLetrero("ACCESO TALLER", "#C3002F", "#FFFFFF");
-            const placaEntrada = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, 0.6),
-                new THREE.MeshBasicMaterial({ map: texPuerta })
+                subGrupo.position.set(pX, 0, pZ);
+                subGrupo.rotation.y = rotY;
+                grupoParedes.add(subGrupo);
+            }
+
+            // Pared Norte (Fondo)
+            agregarMuroBicolor(ancho, 0, -prof / 2, 0);
+
+            // Pared Este (Derecha)
+            agregarMuroBicolor(prof, ancho / 2, 0, Math.PI / 2);
+
+            // Pared Oeste (Izquierda) con Vanos de Puerta
+            // Parte norte del muro oeste
+            agregarMuroBicolor(prof * 0.45, -ancho / 2, -prof * 0.27, Math.PI / 2);
+            // Parte sur del muro oeste
+            agregarMuroBicolor(prof * 0.35, -ancho / 2, prof * 0.32, Math.PI / 2);
+
+            // Puerta / Acceso Taller abierto
+            const texAcceso = crearTexturaLetrero("ACCESO TALLER / BAHÍAS", "#C3002F", "#FFFFFF");
+            const letreroPuerta = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.8, 0.55),
+                new THREE.MeshBasicMaterial({ map: texAcceso, side: THREE.DoubleSide })
             );
-            placaEntrada.position.set(-7.5, 4.5, -prof / 2 + 0.35);
-            grupoParedes.add(placaEntrada);
+            letreroPuerta.position.set(-ancho / 2 + 0.15, 3.2, -1.2);
+            letreroPuerta.rotation.y = Math.PI / 2;
+            grupoParedes.add(letreroPuerta);
+
+            // Fondo iluminado exterior que simula las bahías del taller con luz de día
+            const matExterior = new THREE.MeshBasicMaterial({ color: 0xcfd8dc });
+            const planoExterior = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), matExterior);
+            planoExterior.position.set(-ancho / 2 - 1.5, 2.5, -1.2);
+            planoExterior.rotation.y = Math.PI / 2;
+            grupoParedes.add(planoExterior);
 
             scene.add(grupoParedes);
         }
 
-        function construirRackMecalux(id, titulo, largo, alto, profundidad, numNiveles, posX, posZ) {
+        function crearMallaCiclonica(prof) {
+            // Malla de alambre procedural
+            const canvasMalla = document.createElement('canvas');
+            canvasMalla.width = 128;
+            canvasMalla.height = 128;
+            const ctx = canvasMalla.getContext('2d');
+            ctx.clearRect(0, 0, 128, 128);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 64); ctx.lineTo(64, 0); ctx.lineTo(128, 64); ctx.lineTo(64, 128); ctx.closePath();
+            ctx.stroke();
+
+            const texMalla = new THREE.CanvasTexture(canvasMalla);
+            texMalla.wrapS = THREE.RepeatWrapping;
+            texMalla.wrapT = THREE.RepeatWrapping;
+            texMalla.repeat.set(16, 8);
+
+            const matMalla = new THREE.MeshStandardMaterial({
+                map: texMalla,
+                transparent: true,
+                opacity: 0.55,
+                metalness: 0.6,
+                roughness: 0.3,
+                side: THREE.DoubleSide
+            });
+
+            const grupoMalla = new THREE.Group();
+            const panelMalla = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 2.8), matMalla);
+            panelMalla.position.set(4.8, 1.45, -1.5);
+            panelMalla.rotation.y = Math.PI / 2;
+            grupoMalla.add(panelMalla);
+
+            // Postes tubulares de soporte de la reja
+            const matTubo = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.3 });
+            const geoPoste = new THREE.CylinderGeometry(0.04, 0.04, 2.9, 16);
+            for (let z = -5.25; z <= 2.25; z += 2.5) {
+                const poste = new THREE.Mesh(geoPoste, matTubo);
+                poste.position.set(4.8, 1.45, z);
+                grupoMalla.add(poste);
+            }
+
+            // Tubo pasamanos superior
+            const tuboTop = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 7.5, 16), matTubo);
+            tuboTop.rotation.x = Math.PI / 2;
+            tuboTop.position.set(4.8, 2.9, -1.5);
+            grupoMalla.add(tuboTop);
+
+            // Letrero "Herramientas Generales" colgado de la malla
+            const texLetreroMalla = crearTexturaLetrero("Herramientas Generales", "#334155", "#FFFFFF");
+            const placaReja = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.9, 0.45),
+                new THREE.MeshBasicMaterial({ map: texLetreroMalla, side: THREE.DoubleSide })
+            );
+            placaReja.position.set(4.78, 2.45, -3.2);
+            placaReja.rotation.y = Math.PI / 2;
+            grupoMalla.add(placaReja);
+
+            // Relojes Manómetros de A/C (azul y rojo) colgados de la reja
+            const grupoManometros = new THREE.Group();
+            const matRelojAzul = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.3 });
+            const matRelojRojo = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
+            const geoReloj = new THREE.CylinderGeometry(0.08, 0.08, 0.04, 20);
+            geoReloj.rotateX(Math.PI / 2);
+
+            const rAzul = new THREE.Mesh(geoReloj, matRelojAzul);
+            rAzul.position.set(0, 0, -0.09);
+            grupoManometros.add(rAzul);
+
+            const rRojo = new THREE.Mesh(geoReloj, matRelojRojo);
+            rRojo.position.set(0, 0, 0.09);
+            grupoManometros.add(rRojo);
+
+            // Mangueras colgantes
+            const matManguera = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6 });
+            const manguera = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.8, 8), matManguera);
+            manguera.position.set(0, -0.4, 0);
+            grupoManometros.add(manguera);
+
+            grupoManometros.position.set(4.76, 2.0, -1.1);
+            grupoManometros.rotation.y = Math.PI / 2;
+            grupoMalla.add(grupoManometros);
+
+            scene.add(grupoMalla);
+        }
+
+        function crearExtintorMural(posX, posY, posZ) {
+            const grupoExtintor = new THREE.Group();
+
+            // Cilindro rojo
+            const matRojoExt = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.4, roughness: 0.25 });
+            const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.55, 20), matRojoExt);
+            cuerpo.castShadow = true;
+            grupoExtintor.add(cuerpo);
+
+            // Cabeza y gatillo negro
+            const matNegro = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.7, roughness: 0.4 });
+            const cabeza = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.08, 0.12, 16), matNegro);
+            cabeza.position.y = 0.32;
+            grupoExtintor.add(cabeza);
+
+            // Manguera flexible
+            const manguera = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.45, 8), matNegro);
+            manguera.position.set(0.12, 0.05, 0);
+            grupoExtintor.add(manguera);
+
+            // Etiqueta blanca de especificaciones
+            const matEtiqueta = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const etiqueta = new THREE.Mesh(new THREE.CylinderGeometry(0.122, 0.122, 0.25, 20, 1, true, 0, Math.PI), matEtiqueta);
+            grupoExtintor.add(etiqueta);
+
+            grupoExtintor.position.set(posX, posY, posZ);
+            scene.add(grupoExtintor);
+        }
+
+        function construirEstanteRanuradoRealista(id, titulo, largo, alto, profundidad, numNiveles, posX, posZ) {
             const rack = new THREE.Group();
             rack.userData = { id: id, niveles: [] };
 
-            const matPostes = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.5, roughness: 0.4 });
-            const matVigas = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.3, roughness: 0.5 });
-            const matBalda = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.2, roughness: 0.6 });
+            // Materiales realistas de ángulo ranurado gris y charolas de madera
+            const matPostesRanurados = new THREE.MeshStandardMaterial({ 
+                color: 0x64748b, // Acero gris industrial ranurado
+                metalness: 0.65, 
+                roughness: 0.35 
+            });
+            const matMaderaBalda = new THREE.MeshStandardMaterial({ 
+                color: 0xcbb592, // Aglomerado de madera claro auténtico
+                roughness: 0.75,
+                metalness: 0.05
+            });
+            const matBordeMetal = new THREE.MeshStandardMaterial({ 
+                color: 0x475569, 
+                metalness: 0.7, 
+                roughness: 0.3 
+            });
 
-            const geoPoste = new THREE.BoxGeometry(0.16, alto, 0.16);
-            const numDivisiones = Math.max(2, Math.floor(largo / 3.2));
-            const pasoX = largo / numDivisiones;
+            // 4 Postes en L en las esquinas
+            const wPoste = 0.055;
+            const geoPoste = new THREE.BoxGeometry(wPoste, alto, wPoste);
+            const corners = [
+                [-largo/2 + wPoste/2, -profundidad/2 + wPoste/2],
+                [largo/2 - wPoste/2, -profundidad/2 + wPoste/2],
+                [-largo/2 + wPoste/2, profundidad/2 - wPoste/2],
+                [largo/2 - wPoste/2, profundidad/2 - wPoste/2]
+            ];
 
-            for (let i = 0; i <= numDivisiones; i++) {
-                const xLocal = -largo / 2 + i * pasoX;
-                const p1 = new THREE.Mesh(geoPoste, matPostes);
-                p1.position.set(xLocal, alto / 2, profundidad / 2);
-                p1.castShadow = true;
-                rack.add(p1);
+            corners.forEach(([cx, cz]) => {
+                const poste = new THREE.Mesh(geoPoste, matPostesRanurados);
+                poste.position.set(cx, alto / 2, cz);
+                poste.castShadow = true;
+                rack.add(poste);
+            });
 
-                const p2 = new THREE.Mesh(geoPoste, matPostes);
-                p2.position.set(xLocal, alto / 2, -profundidad / 2);
-                p2.castShadow = true;
-                rack.add(p2);
-            }
-
-            const alturaNivel = alto / (numNiveles + 0.3);
+            // 5 Niveles de baldas de madera (1 al 5 de abajo hacia arriba)
+            const alturaPaso = (alto - 0.28) / (numNiveles - 1);
             for (let n = 1; n <= numNiveles; n++) {
-                const yNivel = n * alturaNivel - 0.4;
+                const yNivel = 0.22 + (n - 1) * alturaPaso;
 
-                const vFrontal = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.14, 0.08), matVigas);
-                vFrontal.position.set(0, yNivel, profundidad / 2);
-                rack.add(vFrontal);
+                // Marco perimetral de acero
+                const rielFrontal = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.05, 0.04), matBordeMetal);
+                rielFrontal.position.set(0, yNivel - 0.02, profundidad / 2);
+                rack.add(rielFrontal);
 
-                const vTrasera = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.14, 0.08), matVigas);
-                vTrasera.position.set(0, yNivel, -profundidad / 2);
-                rack.add(vTrasera);
+                const rielTrasero = new THREE.Mesh(new THREE.BoxGeometry(largo, 0.05, 0.04), matBordeMetal);
+                rielTrasero.position.set(0, yNivel - 0.02, -profundidad / 2);
+                rack.add(rielTrasero);
 
+                // Charola de madera aglomerada
                 const balda = new THREE.Mesh(
-                    new THREE.BoxGeometry(largo - 0.1, 0.06, profundidad - 0.1),
-                    matBalda.clone()
+                    new THREE.BoxGeometry(largo - 0.06, 0.035, profundidad - 0.06),
+                    matMaderaBalda.clone()
                 );
-                balda.position.set(0, yNivel - 0.04, 0);
+                balda.position.set(0, yNivel, 0);
                 balda.receiveShadow = true;
                 balda.userData = { rack: id, nivel: n, yMundial: yNivel };
                 rack.add(balda);
 
                 rack.userData.niveles.push(balda);
-                agregarCajasDecorativas(rack, largo, profundidad, yNivel + 0.25);
             }
 
-            const texLetrero = crearTexturaLetrero(titulo, "#1E293B", "#FFFFFF");
+            // Decorar los estantes según su función real
+            decorarEstanteSegunFoto(rack, id, largo, profundidad, alturaPaso);
+
+            // Letrero superior de identificación
+            const texLetrero = crearTexturaLetrero(titulo, "#C3002F", "#FFFFFF");
             const placaRack = new THREE.Mesh(
-                new THREE.PlaneGeometry(Math.min(largo, 6), 0.7),
+                new THREE.PlaneGeometry(Math.min(largo, 2.2), 0.35),
                 new THREE.MeshBasicMaterial({ map: texLetrero, side: THREE.DoubleSide })
             );
-            placaRack.position.set(0, alto + 0.4, 0);
+            placaRack.position.set(0, alto + 0.25, 0);
             rack.add(placaRack);
 
             rack.position.set(posX, 0, posZ);
@@ -929,27 +1146,207 @@
             return rack;
         }
 
-        function agregarCajasDecorativas(rack, largo, prof, y) {
-            const coloresCajas = [0xef4444, 0x3b82f6, 0xf59e0b, 0x64748b];
-            const numCajas = Math.floor(largo / 1.4);
-            const paso = largo / (numCajas + 1);
+        function decorarEstanteSegunFoto(rack, id, largo, prof, pasoY) {
+            // Materiales de empaques reales
+            const matMaletinNegro = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.4, metalness: 0.4 });
+            const matMaletinAzul = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.4, metalness: 0.3 });
+            const matCajaCarton = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.85 });
+            const matCajaSTPBlanca = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
+            const matBateriaDuralast = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 });
 
-            for (let i = 1; i <= numCajas; i++) {
-                const posXLocal = -largo / 2 + i * paso;
-                // Dejar siempre completamente despejada la zona central (-1.5) donde se señala la herramienta
-                if (Math.abs(posXLocal - (-1.5)) < 1.3) continue;
+            if (id === 'A') {
+                // Nivel 1 (A1): Gaveta transparente con compartimentos + maletín
+                const matOrganizador = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.75, roughness: 0.2 });
+                const gavetaTrans = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.45), matOrganizador);
+                gavetaTrans.position.set(-0.4, 0.22 + 0.09, 0);
+                rack.add(gavetaTrans);
 
-                if (Math.random() > 0.8) continue;
-                const color = coloresCajas[Math.floor(Math.random() * coloresCajas.length)];
-                const caja = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.7 + Math.random() * 0.4, 0.4 + Math.random() * 0.3, prof * 0.5),
-                    new THREE.MeshStandardMaterial({ color: color, roughness: 0.6 })
-                );
-                // Ubicadas ligeramente al fondo del estante para dejar el frente despejado
-                caja.position.set(posXLocal, y, -0.2 + (Math.random() - 0.5) * 0.2);
-                caja.castShadow = true;
-                rack.add(caja);
+                const cCase1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.14, 0.35), matMaletinNegro);
+                cCase1.position.set(0.45, 0.22 + 0.07, 0);
+                rack.add(cCase1);
+
+                // Nivel 2 (A2): Maletín Snap-on con etiqueta roja + cajas rojas
+                const caseA2 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.15, 0.45), matMaletinNegro);
+                caseA2.position.set(0.3, 0.22 + pasoY + 0.075, 0);
+                rack.add(caseA2);
+
+                const matRojoCaja = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.6 });
+                const redBox = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.12, 0.3), matRojoCaja);
+                redBox.position.set(-0.45, 0.22 + pasoY + 0.06, 0);
+                rack.add(redBox);
+
+                // Nivel 3 (A3): Maletín azul + maletín negro
+                const caseBlue = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.14, 0.4), matMaletinAzul);
+                caseBlue.position.set(-0.35, 0.22 + pasoY * 2 + 0.07, 0);
+                rack.add(caseBlue);
+
+                const caseA3 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.14, 0.38), matMaletinNegro);
+                caseA3.position.set(0.4, 0.22 + pasoY * 2 + 0.07, 0);
+                rack.add(caseA3);
+
+                // Nivel 4 (A4): Cajas de cartón con kits de herramientas
+                const boxA4 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.2, 0.42), matCajaCarton);
+                boxA4.position.set(-0.3, 0.22 + pasoY * 3 + 0.1, 0);
+                rack.add(boxA4);
+
+                // Nivel 5 (A5): Gaveteros superiores (A5A1, A5A2, A5B3, A5B4)
+                for (let i = 0; i < 4; i++) {
+                    const gav = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.35), matMaletinNegro);
+                    gav.position.set(-0.6 + i * 0.4, 0.22 + pasoY * 4 + 0.06, 0);
+                    rack.add(gav);
+                }
+            } else if (id === 'B') {
+                // Nivel 1 (B1): Batería azul Duralast + bidón blanco
+                const bateria = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.25, 0.3), matBateriaDuralast);
+                bateria.position.set(-0.45, 0.22 + 0.125, 0);
+                rack.add(bateria);
+
+                const bidon = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.32, 16), matCajaSTPBlanca);
+                bidon.position.set(0.4, 0.22 + 0.16, 0);
+                rack.add(bidon);
+
+                // Nivel 2 (B2): Stacks de cajas blancas oficiales de herramientas STP (como en Foto 2)
+                for (let row = 0; row < 2; row++) {
+                    for (let col = 0; col < 5; col++) {
+                        const cajaSTP = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.28), matCajaSTPBlanca);
+                        cajaSTP.position.set(-0.6 + col * 0.3, 0.22 + pasoY + 0.07 + row * 0.14, (row - 0.5) * 0.12);
+                        rack.add(cajaSTP);
+                    }
+                }
+
+                // Nivel 3 (B3): Esmeril de banco amarillo/gris + maletín azul
+                const grupoEsmeril = new THREE.Group();
+                const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.28, 16), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
+                motor.rotation.z = Math.PI / 2;
+                grupoEsmeril.add(motor);
+
+                const baseEsmeril = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.24), matMaletinNegro);
+                baseEsmeril.position.y = -0.1;
+                grupoEsmeril.add(baseEsmeril);
+
+                const matPiedra = new THREE.MeshStandardMaterial({ color: 0x475569 });
+                const rueda1 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.06, 20), matPiedra);
+                rueda1.rotation.z = Math.PI / 2;
+                rueda1.position.x = -0.17;
+                grupoEsmeril.add(rueda1);
+
+                const rueda2 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.06, 20), matPiedra);
+                rueda2.rotation.z = Math.PI / 2;
+                rueda2.position.x = 0.17;
+                grupoEsmeril.add(rueda2);
+
+                grupoEsmeril.position.set(-0.45, 0.22 + pasoY * 2 + 0.18, 0);
+                rack.add(grupoEsmeril);
+
+                const blueCaseB3 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.16, 0.42), matMaletinAzul);
+                blueCaseB3.position.set(0.35, 0.22 + pasoY * 2 + 0.08, 0);
+                rack.add(blueCaseB3);
+
+                // Nivel 4 (B4): Cajas de herramientas especiales STP
+                const boxB4 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.18, 0.45), matCajaCarton);
+                boxB4.position.set(0.3, 0.22 + pasoY * 3 + 0.09, 0);
+                rack.add(boxB4);
+
+                // Nivel 5 (B5): Caja grande de cartón superior
+                const boxTop = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.35, 0.5), matCajaCarton);
+                boxTop.position.set(0, 0.22 + pasoY * 4 + 0.175, 0);
+                rack.add(boxTop);
+            } else if (id === 'C') {
+                // Nivel 1 (C1): Maletín pesado de llenado de aceite CVT
+                const caseC1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.16, 0.45), matMaletinNegro);
+                caseC1.position.set(0, 0.22 + 0.08, 0);
+                rack.add(caseC1);
+
+                // Nivel 2 (C2): Analizador de Baterías CPX900 + maletín azul
+                const caseC2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.15, 0.4), matMaletinAzul);
+                caseC2.position.set(0.2, 0.22 + pasoY + 0.075, 0);
+                rack.add(caseC2);
+
+                // Nivel 3 (C3): Probador de presión de radiador
+                const caseC3 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.14, 0.38), matMaletinNegro);
+                caseC3.position.set(-0.25, 0.22 + pasoY * 2 + 0.07, 0);
+                rack.add(caseC3);
+
+                // Nivel 4 y 5 (C4, C5): Cajas de cartón apiladas con ligera inclinación (como en Foto 3)
+                const cBox1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.22, 0.4), matCajaCarton);
+                cBox1.position.set(-0.25, 0.22 + pasoY * 3 + 0.11, 0);
+                rack.add(cBox1);
+
+                const cBox2 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.32, 0.45), matCajaCarton);
+                cBox2.position.set(0.1, 0.22 + pasoY * 4 + 0.16, 0);
+                cBox2.rotation.z = 0.08; // Ligera inclinación como en la foto
+                rack.add(cBox2);
             }
+        }
+
+        function crearEquiposTallerPiso() {
+            // 1. BAHBH6FC2000 - Grúa Hidráulica Plegable de 2 Toneladas (Zona D)
+            const grupoGrua = new THREE.Group();
+            const matRojoGrua = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.5, roughness: 0.3 });
+            const matAceroGrua = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.7, roughness: 0.4 });
+
+            // Base con ruedas
+            const basePatas = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 1.1), matRojoGrua);
+            basePatas.position.y = 0.06;
+            grupoGrua.add(basePatas);
+
+            // Torre vertical mástil
+            const torre = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.45, 0.15), matRojoGrua);
+            torre.position.set(-0.45, 0.78, 0);
+            grupoGrua.add(torre);
+
+            // Brazo pluma extensible
+            const pluma = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.12), matRojoGrua);
+            pluma.rotation.z = -0.22;
+            pluma.position.set(0.05, 1.48, 0);
+            grupoGrua.add(pluma);
+
+            // Cilindro hidráulico
+            const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.75, 16), matAceroGrua);
+            piston.rotation.z = 0.65;
+            piston.position.set(-0.15, 1.05, 0);
+            grupoGrua.add(piston);
+
+            // Cadena y gancho de izaje
+            const gancho = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.45, 8), matAceroGrua);
+            gancho.position.set(0.55, 1.15, 0);
+            grupoGrua.add(gancho);
+
+            grupoGrua.position.set(-0.8, 0, 5.2);
+            scene.add(grupoGrua);
+
+            // 2. Estación móvil de A/C con ruedas y trapo rojo encima
+            const grupoAC = new THREE.Group();
+            const matGrisAC = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+            const cuerpoAC = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.95, 0.55), matGrisAC);
+            cuerpoAC.position.y = 0.52;
+            grupoAC.add(cuerpoAC);
+
+            const matPantalla = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
+            const pantalla = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.18), matPantalla);
+            pantalla.position.set(0, 0.78, 0.28);
+            grupoAC.add(pantalla);
+
+            // Trapo rojo de taller encima
+            const trapo = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.03, 0.22), new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.9 }));
+            trapo.position.set(0.05, 1.01, 0);
+            grupoAC.add(trapo);
+
+            grupoAC.position.set(3.4, 0, 6.2);
+            scene.add(grupoAC);
+
+            // 3. Gato hidráulico de transmisión alto
+            const grupoGato = new THREE.Group();
+            const posteGato = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.1, 12), matAceroGrua);
+            posteGato.position.y = 0.55;
+            grupoGato.add(posteGato);
+
+            const mesaGato = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 0.35), matAceroGrua);
+            mesaGato.position.y = 1.12;
+            grupoGato.add(mesaGato);
+
+            grupoGato.position.set(2.4, 0, 6.4);
+            scene.add(grupoGato);
         }
 
         function crearTexturaLetrero(texto, colorFondo, colorTexto) {
@@ -973,28 +1370,25 @@
         function crearMarcadorPin() {
             const pinGroup = new THREE.Group();
 
-            // 1. Cabezal de la flecha: Cono afilado y elegante apuntando hacia abajo
-            const geoHead = new THREE.ConeGeometry(0.18, 0.32, 24);
-            geoHead.rotateX(Math.PI); // Punta hacia abajo
+            const geoHead = new THREE.ConeGeometry(0.16, 0.28, 24);
+            geoHead.rotateX(Math.PI);
             const matFlecha = new THREE.MeshStandardMaterial({
-                color: 0xff0033,           // Rojo Nissan brillante
-                emissive: 0xff0022,        // Brillo neón visible
-                emissiveIntensity: 0.85,
+                color: 0xff0033,
+                emissive: 0xff0022,
+                emissiveIntensity: 0.9,
                 roughness: 0.2,
                 metalness: 0.3
             });
             const head = new THREE.Mesh(geoHead, matFlecha);
-            head.position.y = 0.16; // La punta queda exactamente en y = 0.0
+            head.position.y = 0.14;
             pinGroup.add(head);
 
-            // 2. Vástago / Cuerpo cilíndrico de la flecha
-            const geoShaft = new THREE.CylinderGeometry(0.07, 0.07, 0.28, 24);
+            const geoShaft = new THREE.CylinderGeometry(0.06, 0.06, 0.25, 24);
             const shaft = new THREE.Mesh(geoShaft, matFlecha);
-            shaft.position.y = 0.32 + 0.14; // De y = 0.32 a y = 0.60
+            shaft.position.y = 0.28 + 0.125;
             pinGroup.add(shaft);
 
-            // 3. Remate superior metálico cromado
-            const geoCap = new THREE.CylinderGeometry(0.10, 0.10, 0.04, 24);
+            const geoCap = new THREE.CylinderGeometry(0.09, 0.09, 0.04, 24);
             const matCap = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 emissive: 0xffffff,
@@ -1003,10 +1397,9 @@
                 roughness: 0.1
             });
             const cap = new THREE.Mesh(geoCap, matCap);
-            cap.position.y = 0.62;
+            cap.position.y = 0.55;
             pinGroup.add(cap);
 
-            // 4. Diana / Anillo concéntrico en la base que marca el lugar exacto en el estante
             const geoAnillo = new THREE.RingGeometry(0.12, 0.28, 32);
             const matAnillo = new THREE.MeshBasicMaterial({
                 color: 0xff0033,
@@ -1016,19 +1409,8 @@
             });
             const anillo = new THREE.Mesh(geoAnillo, matAnillo);
             anillo.rotation.x = -Math.PI / 2;
-            anillo.position.y = -0.15; // En la superficie de la balda
+            anillo.position.y = -0.15;
             pinGroup.add(anillo);
-
-            // 5. Pequeño punto focal central en la diana
-            const geoPunto = new THREE.CircleGeometry(0.05, 16);
-            const matPunto = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                side: THREE.DoubleSide
-            });
-            const punto = new THREE.Mesh(geoPunto, matPunto);
-            punto.rotation.x = -Math.PI / 2;
-            punto.position.y = -0.149;
-            pinGroup.add(punto);
 
             pinGroup.visible = false;
             scene.add(pinGroup);
@@ -1052,67 +1434,93 @@
                 camera.aspect = contenedor.clientWidth / contenedor.clientHeight;
                 camera.updateProjectionMatrix();
 
+                // Restaurar color natural de madera en todos los estantes
                 Object.values(racks).forEach(r => {
                     r.userData.niveles.forEach(balda => {
-                        balda.material.color.setHex(0x94a3b8);
+                        balda.material.color.setHex(0xcbb592);
                         balda.material.emissive.setHex(0x000000);
                     });
                 });
 
-                const letra = ubicacion.charAt(0).toUpperCase();
-                const nivelNum = parseInt(ubicacion.slice(1)) || 1;
+                const posLimpia = ubicacion.toUpperCase().trim();
+                const letra = posLimpia.charAt(0);
 
-                const rackTarget = racks[letra] || racks['A'];
-                let posX = rackTarget.position.x;
-                let posZ = rackTarget.position.z;
-                let posY = 2;
-
-                const niveles = rackTarget.userData.niveles;
-                const baldaIdx = Math.min(Math.max(nivelNum - 1, 0), niveles.length - 1);
-                const baldaObjetivo = niveles[baldaIdx];
-
-                if (baldaObjetivo) {
-                    baldaObjetivo.material.color.setHex(0xff0033);
-                    baldaObjetivo.material.emissive.setHex(0x7f0011);
-                    posY = baldaObjetivo.userData.yMundial || 2.5;
+                // Determinar número de nivel (1 a 5)
+                let nivelNum = 1;
+                if (posLimpia.startsWith("A5") || posLimpia === "A5") {
+                    nivelNum = 5;
+                } else if (posLimpia.startsWith("A4") || posLimpia.startsWith("B4")) {
+                    nivelNum = 4;
+                } else if (posLimpia.startsWith("A3") || posLimpia.startsWith("B3") || posLimpia.startsWith("C3")) {
+                    nivelNum = 3;
+                } else if (posLimpia.startsWith("A2") || posLimpia.startsWith("C2")) {
+                    nivelNum = 2;
+                } else if (posLimpia.startsWith("A1") || posLimpia.startsWith("C1")) {
+                    nivelNum = 1;
+                } else if (letra === 'D') {
+                    nivelNum = 1;
                 }
 
-                // Estuche 3D oficial de la herramienta seleccionada (posicionado en el estante despejado)
+                let posX = 0, posY = 1.0, posZ = 0;
+
+                if (letra === 'D') {
+                    // Zona de piso de la grúa
+                    posX = -0.8;
+                    posY = 0.3;
+                    posZ = 5.2;
+                } else {
+                    const rackTarget = racks[letra] || racks['A'];
+                    posX = rackTarget.position.x;
+                    posZ = rackTarget.position.z;
+
+                    const niveles = rackTarget.userData.niveles;
+                    const baldaIdx = Math.min(Math.max(nivelNum - 1, 0), niveles.length - 1);
+                    const baldaObjetivo = niveles[baldaIdx];
+
+                    if (baldaObjetivo) {
+                        // Iluminar la balda en Rojo Nissan brillante
+                        baldaObjetivo.material.color.setHex(0xff0033);
+                        baldaObjetivo.material.emissive.setHex(0xaa0022);
+                        posY = baldaObjetivo.userData.yMundial || 1.2;
+                    }
+                }
+
+                // Estuche 3D de la herramienta seleccionada
                 if (!estucheHerramienta) {
                     const grupoEstuche = new THREE.Group();
-                    const geoBase = new THREE.BoxGeometry(0.85, 0.16, 0.55);
+                    const geoBase = new THREE.BoxGeometry(0.55, 0.12, 0.38);
                     const matEstuche = new THREE.MeshStandardMaterial({
                         color: 0x0f172a,
                         roughness: 0.3,
                         metalness: 0.6
                     });
                     const baseEstuche = new THREE.Mesh(geoBase, matEstuche);
-                    baseEstuche.position.y = 0.08;
+                    baseEstuche.position.y = 0.06;
                     baseEstuche.castShadow = true;
                     grupoEstuche.add(baseEstuche);
 
-                    const geoPlaca = new THREE.BoxGeometry(0.55, 0.02, 0.30);
+                    const geoPlaca = new THREE.BoxGeometry(0.38, 0.015, 0.22);
                     const matPlaca = new THREE.MeshStandardMaterial({
                         color: 0xff0033,
                         emissive: 0xaa0022,
-                        emissiveIntensity: 0.5,
+                        emissiveIntensity: 0.6,
                         roughness: 0.3
                     });
                     const placa = new THREE.Mesh(geoPlaca, matPlaca);
-                    placa.position.y = 0.17;
+                    placa.position.y = 0.125;
                     grupoEstuche.add(placa);
 
                     scene.add(grupoEstuche);
                     estucheHerramienta = grupoEstuche;
                 }
-                estucheHerramienta.position.set(posX - 1.5, posY, posZ + 0.25);
+
+                const offsetZ = letra === 'D' ? 0 : 0.15;
+                estucheHerramienta.position.set(posX, posY, posZ + offsetZ);
                 estucheHerramienta.visible = true;
 
-                // Flecha indicadora: Flota sobre el estuche en la zona frontal completamente despejada
-                // Altura calculada con precisión: la punta queda en posY + 0.30 m
-                // El remate superior llega a posY + 0.92 m, dejando más de 65 cm libres debajo del nivel superior
-                pinBaseY = posY + 0.30;
-                pinMarcador.position.set(posX - 1.5, pinBaseY, posZ + 0.25);
+                // Pin indicador
+                pinBaseY = posY + 0.26;
+                pinMarcador.position.set(posX, pinBaseY, posZ + offsetZ);
                 pinMarcador.visible = true;
 
                 posDestinoGlobal = {
